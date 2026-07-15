@@ -997,7 +997,7 @@ def main():
                          "per color; the engine analysis runs once and is shared. "
                          "with --out report.md, both mode writes report_white.md "
                          "and report_black.md")
-    ap.add_argument("--openings-dir", default=r"C:\Users\admin\Downloads\chess-openings-master\chess-openings-master")
+    ap.add_argument("--openings-dir", default="")
     args = ap.parse_args()
 
     if args.username:
