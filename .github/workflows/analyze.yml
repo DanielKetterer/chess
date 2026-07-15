@@ -22,7 +22,7 @@ on:
           - "18"
           - "24"
           - "30"
-        default: "18"
+        default: "10"
 
       findability:
         description: Findability analysis
@@ -31,7 +31,7 @@ on:
         options:
           - heuristic
           - honest
-        default: heuristic
+        default: honest
 
 jobs:
   analyze:
