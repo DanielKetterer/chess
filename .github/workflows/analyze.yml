@@ -29,7 +29,7 @@ on:
       findability:
         description: Findability analysis method
         required: true
-        default: heuristic
+        default: honest
         type: choice
         options:
           - heuristic
