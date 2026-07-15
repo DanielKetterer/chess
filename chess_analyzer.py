@@ -234,13 +234,16 @@ def fetch_chesscom_game(username, game_id=None):
 # ----------------------------------------------------------------------------
 
 def cp_to_winprob(cp, mate=None):
-    """Convert an evaluation (White's perspective) to White's win probability 0..100.
-    Uses the lichess logistic model. Mate scores map to ~0/100."""
+    """Convert a White-POV evaluation to Lichess Win%."""
     if mate is not None:
-        return 100.0 if mate > 0 else 0.0
-    cp = max(-1000, min(1000, cp))
-    return 50.0 + 50.0 * (2.0 / (1.0 + math.exp(-0.00368208 * cp)) - 1.0)
+        cp = 1000 if mate > 0 else -1000
+    elif cp is None:
+        cp = 0
 
+    cp = max(-1000, min(1000, cp))
+    return 50.0 + 50.0 * (
+        2.0 / (1.0 + math.exp(-0.00368208 * cp)) - 1.0
+    )
 
 def score_to_parts(score: chess.engine.PovScore):
     """Return (cp, mate) from White's perspective."""
@@ -539,14 +542,99 @@ def crossing(wp_before, wp_after):
     return f"{a} -> {b}" if a != b else ""
 
 
-def game_accuracy(wp_losses):
-    """Lichess-style accuracy from per-move win-probability losses."""
-    if not wp_losses:
+def lichess_move_accuracy(wp_before, wp_after):
+    """Lichess accuracy for one move."""
+    if wp_after >= wp_before:
         return 100.0
-    accs = [max(0.0, min(100.0,
-            103.1668 * math.exp(-0.04354 * loss) - 3.1669)) for loss in wp_losses]
-    return sum(accs) / len(accs)
 
+    loss = wp_before - wp_after
+    raw = (
+        103.1668100711649
+        * math.exp(-0.04354415386753951 * loss)
+        - 3.166924740191411
+    )
+
+    # Lichess's uncertainty bonus for imperfect engine analysis.
+    return max(0.0, min(100.0, raw + 1.0))
+
+
+def game_accuracy(moves, color):
+    """Lichess game accuracy for one color."""
+    if not moves:
+        return 100.0
+
+    # Lichess uses +0.15 as the standard initial-position evaluation.
+    white_wps = [cp_to_winprob(15)]
+
+    for move in moves:
+        white_wps.append(
+            cp_to_winprob(move.eval_after_cp, move.eval_after_mate)
+        )
+
+    # Lichess uses sliding windows of between 2 and 8 positions.
+    window_size = max(2, min(8, len(moves) // 10))
+    window_size = min(window_size, len(white_wps))
+
+    first_window = white_wps[:window_size]
+
+    # Repeating the first window aligns one volatility weight with every ply.
+    windows = [
+        first_window
+        for _ in range(max(0, window_size - 2))
+    ]
+
+    windows.extend(
+        white_wps[i:i + window_size]
+        for i in range(len(white_wps) - window_size + 1)
+    )
+
+    weights = []
+
+    for window in windows:
+        mean = sum(window) / len(window)
+        variance = sum((value - mean) ** 2 for value in window) / len(window)
+        volatility = math.sqrt(variance)
+
+        # Lichess constrains volatility weights to this interval.
+        weights.append(max(0.5, min(12.0, volatility)))
+
+    selected = []
+
+    for i, move in enumerate(moves):
+        wp_before_white = white_wps[i]
+        wp_after_white = white_wps[i + 1]
+
+        if move.color == "white":
+            wp_before = wp_before_white
+            wp_after = wp_after_white
+        else:
+            wp_before = 100.0 - wp_before_white
+            wp_after = 100.0 - wp_after_white
+
+        accuracy = lichess_move_accuracy(wp_before, wp_after)
+
+        if move.color == color:
+            selected.append((accuracy, weights[i]))
+
+    if not selected:
+        return 100.0
+
+    weighted_mean = (
+        sum(accuracy * weight for accuracy, weight in selected)
+        / sum(weight for _, weight in selected)
+    )
+
+    accuracies = [accuracy for accuracy, _ in selected]
+
+    if any(accuracy <= 0.0 for accuracy in accuracies):
+        harmonic_mean = 0.0
+    else:
+        harmonic_mean = (
+            len(accuracies)
+            / sum(1.0 / accuracy for accuracy in accuracies)
+        )
+
+    return (weighted_mean + harmonic_mean) / 2.0
 
 # ----------------------------------------------------------------------------
 # Engine analysis of one game
@@ -761,12 +849,14 @@ def build_report(meta, moves, opening, player_color, graph_path=None):
 
     player_moves = [m for m in moves if m.color == player_color]
     opp_moves = [m for m in moves if m.color != player_color]
-    acc_player = game_accuracy([m.wp_loss for m in player_moves])
-    acc_opp = game_accuracy([m.wp_loss for m in opp_moves])
 
+    opponent_color = "black" if player_color == "white" else "white"
+
+    acc_player = game_accuracy(moves, player_color)
+    acc_opp = game_accuracy(moves, opponent_color)
     L("## Summary")
     L("")
-    L(f"- Accuracy: you {acc_player:.1f}%, opponent {acc_opp:.1f}%")
+    L(f"- Lichess accuracy: you {acc_player:.1f}%, opponent {acc_opp:.1f}%")
     if name:
         L(f"- Opening: {eco} {name} (theory followed through ply {book_ply})")
     else:
