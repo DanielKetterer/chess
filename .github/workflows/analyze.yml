@@ -7,34 +7,40 @@ on:
         description: Chess.com username
         required: true
         default: DanielKetterer
+        type: string
 
       game_id:
         description: Game ID or URL; leave blank for latest game
         required: false
         default: ""
+        type: string
 
       depth:
-        description: Stockfish depth
+        description: Stockfish analysis depth
         required: true
+        default: "10"
         type: choice
         options:
           - "10"
           - "18"
           - "24"
           - "30"
-        default: "10"
 
       findability:
-        description: Findability analysis
+        description: Findability analysis method
         required: true
+        default: honest
         type: choice
         options:
           - heuristic
           - honest
-        default: honest
+
+permissions:
+  contents: read
 
 jobs:
   analyze:
+    name: Run chess analysis
     runs-on: ubuntu-latest
     timeout-minutes: 350
 
@@ -55,7 +61,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install python-chess pandas matplotlib
+          python -m pip install python-chess pandas matplotlib markdown
 
       - name: Analyze game
         env:
@@ -70,8 +76,8 @@ jobs:
             --depth "$DEPTH"
             --findability "$FINDABILITY"
             --perspective both
-            --out analysis.md
-            --graph evaluation.png
+            --out reportLatest.md
+            --graph reportLatest.png
           )
 
           if [ -n "$GAME_ID" ]; then
@@ -80,13 +86,24 @@ jobs:
 
           python chess_analyzer.py "${args[@]}"
 
-      - name: Upload reports and graphs
+      - name: Convert reports to HTML
+        run: |
+          python -m markdown -x tables \
+            reportLatest_black.md > reportLatest_black.html
+
+          python -m markdown -x tables \
+            reportLatest_white.md > reportLatest_white.html
+
+      - name: Upload reports
         uses: actions/upload-artifact@v4
         with:
           name: chess-analysis-${{ github.run_number }}
           path: |
-            analysis_white.md
-            analysis_black.md
-            evaluation_white.png
-            evaluation_black.png
+            reportLatest_black.html
+            reportLatest_white.html
+            reportLatest_black.md
+            reportLatest_white.md
+            reportLatest_black.png
+            reportLatest_white.png
           retention-days: 30
+          if-no-files-found: error
