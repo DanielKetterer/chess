@@ -1,14 +1,14 @@
-# (free, so lmk) Game analysis: DanielKetterer vs Candongas47
+# (free, so lmk) Game analysis: kmlkrn vs DanielKetterer
 
-Date: 2026.07.19  |  Time control: daily (1/259200)  |  You played: black
-Game: https://www.chess.com/game/daily/1001249768
+Date: 2026.07.20  |  Time control: rapid (1800)  |  You played: black
+Game: https://www.chess.com/game/live/171848454352
 
 ## Summary
 
-- Lichess accuracy: you 69.3%, opponent 79.4%
-- Opening: B02 Alekhine Defense: Mokele Mbembe, Vavra Defense (theory followed through ply 6)
-- First deviation from theory: ply 7, Opponent played 4. Bd3
-- Your moves: 5 best, 3 excellent, 5 good, 3 inaccuracy, 2 mistake, 1 blunder
+- Lichess accuracy: you 57.4%, opponent 73.7%
+- Opening: A45 Indian Defense: Pawn Push Variation (theory followed through ply 3)
+- First deviation from theory: ply 4, You played 2... c6
+- Your moves: 5 best, 6 excellent, 1 good, 2 inaccuracy, 2 mistake, 3 blunder
 
 METRICS:
 
@@ -31,91 +31,95 @@ See: https://support.chess.com/en/articles/8572705-how-are-moves-classified-what
 
 ## Biggest missed opportunity
 
-You played 14...Bb7. Stockfish preferred Nxe5, after which the main line runs 14...Nxe5 15. Qe2 Rb8 16. Rad1 Bd6 17. Bd4. The evaluation crossed from equal to losing, which matters more than the raw number. Why it went wrong: a favorable capture was available (Nxe5). Before committing to a quiet move here, the checklist is checks, captures, threats, in that order. The engine prefers this move from search depth 1; it sits near the surface, a forcing move, the kind a checks-and-captures scan catches. Candidates considered by the engine: Nxe5 (-1.49), Bb7 (+2.63), Nd4 (+3.72).
+You played 19...Nxf1. Stockfish preferred Rg6, after which the main line runs 19...Rg6 20. Nxe6 Rxe6 21. Nxd5 Qh1+ 22. Kf2. The evaluation crossed from equal to losing, which matters more than the raw number. Why it went wrong: left queen on h4, knight on f1 insufficiently defended; motif: creates threat on f1. Before committing to a quiet move here, the checklist is checks, captures, threats, in that order. The engine does not prefer this move until depth 13; missing it is forgivable, so weigh this one lightly. Candidates considered by the engine: Rg6 (+0.00), Nd7 (+0.00), Qh1+ (+1.72).
 
 ## Critical positions
 
-- Ply 9 (opponent), 5.Kxf2: +3.01 -> +3.04 [only-move situation]
-- Ply 23 (opponent), 12.Nd4: +4.71 -> +0.01 [evaluation crossed winning -> equal]
-- Ply 24 (you), 12...Nxd4: +0.01 -> +0.00 [only-move situation]
-- Ply 26 (you), 13...Nc6: +0.00 -> +0.08 [only-move situation]
-- Ply 28 (you), 14...Bb7: -1.49 -> +2.86 [only-move situation; evaluation crossed equal -> losing]
+- Ply 28 (you), 14...Ne4: +0.12 -> +2.67 [evaluation crossed equal -> losing]
+- Ply 30 (you), 15...Bxh2+: +0.73 -> +4.11 [evaluation crossed equal -> losing]
+- Ply 31 (opponent), 16.Kxh2: +4.11 -> +4.13 [only-move situation]
+- Ply 37 (opponent), 19.Qe1: +2.78 -> +0.00 [evaluation crossed winning -> equal]
+- Ply 38 (you), 19...Nxf1: +0.00 -> +7.10 [evaluation crossed equal -> losing]
+- Ply 39 (opponent), 20.Qxh4: +7.10 -> +8.11 [only-move situation]
 
 ## Your errors, move by move
 
-### 2...Nf6 (inaccuracy, positional, wp loss 5%)
+### 9...Bd7 (inaccuracy, positional, wp loss 8%)
 
-You played 2...Nf6. Stockfish preferred d5, after which the main line runs 2...d5 3. Nc3 Nf6 4. Bg5 dxe4 5. Nxe4. Why it went wrong: motif: creates threat on e4. This was a judgment error rather than a missed tactic; compare the pawn structure and piece activity after both moves. The engine prefers this move from search depth 1; it sits near the surface, a quiet move, but one whose point shows at a glance. Candidates considered by the engine: d5 (+0.39), a6 (+0.53), c5 (+0.69).
+You played 9...Bd7. Stockfish preferred Nc6, after which the main line runs 9...Nc6 10. O-O a6 11. b3 Qe7 12. Bb2. This was a judgment error rather than a missed tactic; compare the pawn structure and piece activity after both moves. The engine prefers this move from search depth 1; it sits near the surface, a quiet move, but one whose point shows at a glance. Candidates considered by the engine: Nc6 (-0.52), h6 (-0.38), a6 (-0.32).
 
-### 4...Nxf2 (mistake, tactical, wp loss 12%)
+### 10...a6 (mistake, positional, wp loss 12%)
 
-You played 4...Nxf2. Stockfish preferred d5, after which the main line runs 4...d5 5. Nh3 h6 6. O-O c5 7. c3. The evaluation crossed from equal to losing, which matters more than the raw number. Why it went wrong: left knight on f2 insufficiently defended. Before committing to a quiet move here, the checklist is checks, captures, threats, in that order. The engine prefers this move from search depth 1; it sits near the surface, a forcing move, the kind a checks-and-captures scan catches. Candidates considered by the engine: d5 (+1.47), f5 (+1.80), Nxf2 (+3.10).
+You played 10...a6. Stockfish preferred Qe7, after which the main line runs 10...Qe7 11. e4 dxe4 12. Ng5 Be5 13. Ngxe4. This was a judgment error rather than a missed tactic; compare the pawn structure and piece activity after both moves. The engine prefers this move from search depth 5; it sits near the surface, a quiet move, but one whose point shows at a glance. Candidates considered by the engine: Qe7 (-0.08), Bc6 (+0.00), Qc7 (+0.11).
 
-### 5...Nc6 (inaccuracy, positional, wp loss 5%)
+### 11...Bb5 (mistake, positional, wp loss 17%)
 
-You played 5...Nc6. Stockfish preferred Qh4+, after which the main line runs 5...Qh4+ 6. Ke3 Qg5+ 7. Kf3 Qh4 8. Be3. Why it went wrong: the best move was a forcing check; motif: creates threat on d4. This was a judgment error rather than a missed tactic; compare the pawn structure and piece activity after both moves. The engine prefers this move from search depth 1; it sits near the surface, a quiet move, but one whose point shows at a glance. Candidates considered by the engine: Qh4+ (+3.04), d6 (+3.81), c5 (+3.86).
+You played 11...Bb5. Stockfish preferred Qc7, after which the main line runs 11...Qc7 12. Bd2 Nc6 13. Rc1 Be8 14. b4. This was a judgment error rather than a missed tactic; compare the pawn structure and piece activity after both moves. The engine prefers this move from search depth 4; it sits near the surface, a quiet move, but one whose point shows at a glance. Candidates considered by the engine: Qc7 (-0.39), Bc6 (-0.24), Qe7 (-0.17).
 
-### 14...Bb7 (blunder, tactical, wp loss 38%)
+### 13...b5 (inaccuracy, positional, wp loss 7%)
 
-You played 14...Bb7. Stockfish preferred Nxe5, after which the main line runs 14...Nxe5 15. Qe2 Rb8 16. Rad1 Bd6 17. Bd4. The evaluation crossed from equal to losing, which matters more than the raw number. Why it went wrong: a favorable capture was available (Nxe5). Before committing to a quiet move here, the checklist is checks, captures, threats, in that order. The engine prefers this move from search depth 1; it sits near the surface, a forcing move, the kind a checks-and-captures scan catches. Candidates considered by the engine: Nxe5 (-1.49), Bb7 (+2.63), Nd4 (+3.72).
+You played 13...b5. Stockfish preferred Nc6, after which the main line runs 13...Nc6 14. Bb2 Qe8 15. b5 Na5 16. bxa6. This was a judgment error rather than a missed tactic; compare the pawn structure and piece activity after both moves. The engine prefers this move from search depth 1; it sits near the surface, a quiet move, but one whose point shows at a glance. Candidates considered by the engine: Nc6 (+0.00), Nbd7 (+0.00), Qc7 (+0.03).
 
-### 15...Bxh4+ (mistake, tactical, wp loss 14%)
+### 14...Ne4 (blunder, positional, wp loss 22%)
 
-You played 15...Bxh4+. Stockfish preferred Nxe5, after which the main line runs 15...Nxe5 16. Qg3 Bd6 17. Bxb7 Rd8 18. Bf4. Why it went wrong: left queen on d7, bishop on h4 insufficiently defended; a favorable capture was available (Nxe5). Before committing to a quiet move here, the checklist is checks, captures, threats, in that order. The engine prefers this move from search depth 1; it sits near the surface, a forcing move, the kind a checks-and-captures scan catches. Candidates considered by the engine: Nxe5 (+3.10), Bd6 (+4.88), Qxd1 (+5.58).
+You played 14...Ne4. Stockfish preferred Nc6, after which the main line runs 14...Nc6 15. Rad1 Qc7 16. h3 Ne5 17. Nxe5. The evaluation crossed from equal to losing, which matters more than the raw number. This was a judgment error rather than a missed tactic; compare the pawn structure and piece activity after both moves. The engine prefers this move from search depth 3; it sits near the surface, a quiet move, but one whose point shows at a glance. Candidates considered by the engine: Nc6 (+0.12), Nbd7 (+0.36), Re8 (+0.60).
 
-### 16...Qe7 (inaccuracy, positional, wp loss 8%)
+### 15...Bxh2+ (blunder, tactical, wp loss 25%)
 
-You played 16...Qe7. Stockfish preferred Nxe5, after which the main line runs 16...Nxe5 17. Qh1 Qe7 18. Bxb7 Rd8 19. Rxd8+. Why it went wrong: a favorable capture was available (Nxe5). This was a judgment error rather than a missed tactic; compare the pawn structure and piece activity after both moves. The engine prefers this move from search depth 1; it sits near the surface, a quiet move, but one whose point shows at a glance. Candidates considered by the engine: Nxe5 (+5.95), Qxd1 (+6.70), Rf8 (+7.06).
+You played 15...Bxh2+. Stockfish preferred Nxc3, after which the main line runs 15...Nxc3 16. Bxc3 Re8 17. Qg4 Qc7 18. Rac1. The evaluation crossed from equal to losing, which matters more than the raw number. Why it went wrong: left pawn on e6, bishop on h2 insufficiently defended. Before committing to a quiet move here, the checklist is checks, captures, threats, in that order. The engine first prefers this move at depth 7; findable, but it takes a deliberate look rather than a scan. Candidates considered by the engine: Nxc3 (+0.73), Qh4 (+1.66), Qe7 (+2.68).
+
+### 19...Nxf1 (blunder, tactical, wp loss 43%)
+
+You played 19...Nxf1. Stockfish preferred Rg6, after which the main line runs 19...Rg6 20. Nxe6 Rxe6 21. Nxd5 Qh1+ 22. Kf2. The evaluation crossed from equal to losing, which matters more than the raw number. Why it went wrong: left queen on h4, knight on f1 insufficiently defended; motif: creates threat on f1. Before committing to a quiet move here, the checklist is checks, captures, threats, in that order. The engine does not prefer this move until depth 13; missing it is forgivable, so weigh this one lightly. Candidates considered by the engine: Rg6 (+0.00), Nd7 (+0.00), Qh1+ (+1.72).
 
 ## Full move table
 
 | Ply | Move | Eval before | Eval after | Best | CP loss | WP loss | Class |
 |-----|------|-------------|------------|------|---------|---------|-------|
-| 1 | 1.e4 | +0.34 | +0.18 | d4 | 16 | 1% | excellent |
-| 2 | 1...e6* | +0.18 | +0.56 | c6 | 38 | 3% | good |
-| 3 | 2.d4 | +0.56 | +0.39 | d4 | 17 | 2% | best |
-| 4 | 2...Nf6* | +0.39 | +0.97 | d5 | 58 | 5% | inaccuracy |
-| 5 | 3.e5 | +0.97 | +0.86 | e5 | 11 | 1% | best |
-| 6 | 3...Ne4* | +0.86 | +1.42 | Nd5 | 56 | 5% | good |
-| 7 | 4.Bd3 | +1.42 | +1.47 | Nh3 | 0 | 0% | excellent |
-| 8 | 4...Nxf2* | +1.47 | +3.01 | d5 | 154 | 12% | mistake |
-| 9 | 5.Kxf2 | +3.01 | +3.04 | Kxf2 | 0 | 0% | best |
-| 10 | 5...Nc6* | +3.04 | +3.87 | Qh4+ | 83 | 5% | inaccuracy |
-| 11 | 6.Be3 | +3.87 | +3.85 | Nf3 | 2 | 0% | excellent |
-| 12 | 6...d6* | +3.85 | +4.00 | Nxd4 | 15 | 1% | excellent |
-| 13 | 7.Nf3 | +4.00 | +3.95 | Nf3 | 5 | 0% | best |
-| 14 | 7...dxe5* | +3.95 | +4.24 | Nb4 | 29 | 2% | excellent |
-| 15 | 8.dxe5 | +4.24 | +4.19 | dxe5 | 5 | 0% | best |
-| 16 | 8...Be7* | +4.19 | +4.81 | Qe7 | 62 | 3% | good |
-| 17 | 9.h4 | +4.81 | +4.00 | Qe2 | 81 | 4% | good |
-| 18 | 9...Qd5* | +4.00 | +4.05 | Qd5 | 5 | 0% | best |
-| 19 | 10.Nc3 | +4.05 | +4.06 | Nc3 | 0 | 0% | best |
-| 20 | 10...Qd7* | +4.06 | +4.86 | Qa5 | 80 | 4% | good |
-| 21 | 11.g4 | +4.86 | +4.33 | h5 | 53 | 3% | good |
-| 22 | 11...b6* | +4.33 | +4.71 | Nb4 | 38 | 2% | excellent |
-| 23 | 12.Nd4 | +4.71 | +0.01 | Be4 | 470 | 35% | blunder |
-| 24 | 12...Nxd4* | +0.01 | +0.00 | Nxd4 | 0 | 0% | best |
-| 25 | 13.Be4 | +0.00 | +0.00 | Be4 | 0 | 0% | best |
-| 26 | 13...Nc6* | +0.00 | +0.08 | Nc6 | 8 | 1% | best |
-| 27 | 14.Qf3 | +0.08 | -1.49 | Qxd7+ | 157 | 14% | mistake |
-| 28 | 14...Bb7* | -1.49 | +2.86 | Nxe5 | 435 | 38% | blunder |
-| 29 | 15.Rad1 | +2.86 | +3.10 | Rad1 | 0 | 0% | best |
-| 30 | 15...Bxh4+* | +3.10 | +5.86 | Nxe5 | 276 | 14% | mistake |
-| 31 | 16.Rxh4 | +5.86 | +5.95 | Rxh4 | 0 | 0% | best |
-| 32 | 16...Qe7* | +5.95 | +9.89 | Nxe5 | 394 | 8% | inaccuracy |
-| 33 | 17.Bxc6+ | +9.89 | +11.25 | Bxc6+ | 0 | 0% | best |
-| 34 | 17...Kf8* | +11.25 | +9.90 | Kf8 | 0 | 0% | best |
-| 35 | 18.g5 | +9.90 | +8.88 | Rdh1 | 102 | 1% | excellent |
-| 36 | 18...Bxc6* | +8.88 | +8.88 | Bxc6 | 0 | 0% | best |
-| 37 | 19.Qxc6 | +8.88 | +8.06 | Qxc6 | 82 | 1% | best |
-| 38 | 19...Re8* | +8.06 | M14 | Rd8 |  | 2% | good |
-| 39 | 20.Rd7 | M14 | M12 | Rd7 |  | 0% | best |
+| 1 | 1.d4 | +0.35 | +0.20 | Nf3 | 15 | 1% | excellent |
+| 2 | 1...Nf6* | +0.20 | +0.24 | d5 | 4 | 0% | excellent |
+| 3 | 2.d5 | +0.24 | -0.25 | Nf3 | 49 | 5% | good |
+| 4 | 2...c6* | -0.25 | -0.24 | e6 | 1 | 0% | excellent |
+| 5 | 3.c4 | -0.24 | -0.23 | c4 | 0 | 0% | best |
+| 6 | 3...cxd5* | -0.23 | -0.22 | e6 | 1 | 0% | excellent |
+| 7 | 4.cxd5 | -0.22 | -0.18 | cxd5 | 0 | 0% | best |
+| 8 | 4...e6* | -0.18 | -0.17 | Qa5+ | 1 | 0% | excellent |
+| 9 | 5.dxe6 | -0.17 | -0.44 | Nc3 | 27 | 2% | good |
+| 10 | 5...fxe6* | -0.44 | -0.35 | fxe6 | 9 | 1% | best |
+| 11 | 6.Nc3 | -0.35 | -0.57 | Nf3 | 22 | 2% | good |
+| 12 | 6...d5* | -0.57 | -0.49 | d5 | 8 | 1% | best |
+| 13 | 7.e3 | -0.49 | -0.80 | Nf3 | 31 | 3% | good |
+| 14 | 7...Bd6* | -0.80 | -0.44 | Nc6 | 36 | 3% | good |
+| 15 | 8.Nf3 | -0.44 | -0.64 | e4 | 20 | 2% | excellent |
+| 16 | 8...O-O* | -0.64 | -0.47 | e5 | 17 | 2% | excellent |
+| 17 | 9.Be2 | -0.47 | -0.52 | Be2 | 5 | 0% | best |
+| 18 | 9...Bd7* | -0.52 | +0.32 | Nc6 | 84 | 8% | inaccuracy |
+| 19 | 10.O-O | +0.32 | -0.08 | e4 | 40 | 4% | good |
+| 20 | 10...a6* | -0.08 | +1.23 | Qe7 | 131 | 12% | mistake |
+| 21 | 11.a3 | +1.23 | -0.39 | e4 | 162 | 15% | mistake |
+| 22 | 11...Bb5* | -0.39 | +1.55 | Qc7 | 194 | 17% | mistake |
+| 23 | 12.b4 | +1.55 | +0.00 | Nxb5 | 155 | 14% | mistake |
+| 24 | 12...Bxe2* | +0.00 | +0.00 | Bxe2 | 0 | 0% | best |
+| 25 | 13.Qxe2 | +0.00 | +0.00 | Nxe2 | 0 | 0% | excellent |
+| 26 | 13...b5* | +0.00 | +0.79 | Nc6 | 79 | 7% | inaccuracy |
+| 27 | 14.Bb2 | +0.79 | +0.12 | e4 | 67 | 6% | inaccuracy |
+| 28 | 14...Ne4* | +0.12 | +2.67 | Nc6 | 255 | 22% | blunder |
+| 29 | 15.Nd4 | +2.67 | +0.73 | Nxe4 | 194 | 16% | mistake |
+| 30 | 15...Bxh2+* | +0.73 | +4.11 | Nxc3 | 338 | 25% | blunder |
+| 31 | 16.Kxh2 | +4.11 | +4.13 | Kxh2 | 0 | 0% | best |
+| 32 | 16...Qh4+* | +4.13 | +4.30 | Qh4+ | 17 | 1% | best |
+| 33 | 17.Kg1 | +4.30 | +4.38 | Kg1 | 0 | 0% | best |
+| 34 | 17...Rf6* | +4.38 | +4.50 | Nf6 | 12 | 1% | excellent |
+| 35 | 18.f3 | +4.50 | +2.57 | Nf3 | 193 | 12% | mistake |
+| 36 | 18...Ng3* | +2.57 | +2.78 | Ng3 | 21 | 2% | best |
+| 37 | 19.Qe1 | +2.78 | +0.00 | Qc2 | 278 | 24% | blunder |
+| 38 | 19...Nxf1* | +0.00 | +7.10 | Rg6 | 710 | 43% | blunder |
+| 39 | 20.Qxh4 | +7.10 | +8.11 | Qxh4 | 0 | 0% | best |
 
 Rows marked * are your moves. WP loss is win-probability loss; it is the primary signal, CP loss is shown for reference.
 
 ## Patterns in this game
 
-- Error mix: 3 tactical, 3 positional.
-- Opening: 3 error(s) (avg wp loss 7%).
-- Middlegame: 3 error(s) (avg wp loss 20%).
-- 3 of your errors came with under a minute on the clock.
+- Error mix: 2 tactical, 5 positional.
+- Opening: 2 error(s) (avg wp loss 10%).
+- Middlegame: 5 error(s) (avg wp loss 23%).
