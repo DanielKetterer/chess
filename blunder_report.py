@@ -153,6 +153,52 @@ def player_error_text(text):
     return text[section.end():end]
 
 
+def parse_markdown_table_value(value):
+    value = value.strip()
+    if value == "":
+        return None
+    if value.startswith(">"):
+        return value
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
+def parse_error_summary_table(error_text):
+    """Read the analyzer's error summary table when markdown sidecars are absent.
+
+    The move-by-move prose describes depth-to-preference, but the compact table
+    above it is the only markdown source for refutation depth, seconds spent,
+    and the pre-error evaluation bucket. Index it by move label so the fallback
+    parser can merge those fields into the heading/prose rows.
+    """
+    rows = {}
+    lines = error_text.splitlines()
+    for i, line in enumerate(lines):
+        if not line.strip().startswith("| Move |"):
+            continue
+        headers = [h.strip().casefold() for h in line.strip().strip("|").split("|")]
+        for table_line in lines[i + 2:]:
+            stripped = table_line.strip()
+            if not stripped.startswith("|"):
+                break
+            cells = [c.strip() for c in stripped.strip("|").split("|")]
+            if len(cells) != len(headers):
+                continue
+            data = dict(zip(headers, cells))
+            move = data.get("move", "")
+            if not move:
+                continue
+            rows[move] = {
+                "refute_depth": parse_markdown_table_value(data.get("refute depth", "")),
+                "seconds_spent": parse_markdown_table_value(data.get("seconds spent", "")),
+                "pre_error_bucket": data.get("pre-error eval", ""),
+            }
+        break
+    return rows
+
+
 def depth_from_section(section):
     """Order matters: censored-low prose contains a number that is NOT a
     measurement, so it has to be recognized before the numeric pattern."""
@@ -177,11 +223,14 @@ def parse_markdown_report(path, username):
                      report_path=str(path))
     error_text = player_error_text(text)
     matches = list(ERROR_HEADING_RE.finditer(error_text))
+    table_rows = parse_error_summary_table(error_text)
     for idx, match in enumerate(matches):
         end = matches[idx + 1].start() if idx + 1 < len(matches) else len(error_text)
         section = error_text[match.start():end]
+        label = match.group("label").strip()
+        table_row = table_rows.get(label, {})
         rec.rows.append({
-            "move_label": match.group("label").strip(),
+            "move_label": label,
             "move_number": int(match.group("move_number")),
             "classification": match.group("classification").strip().casefold(),
             "error_type": match.group("error_type").strip().casefold(),
@@ -190,9 +239,9 @@ def parse_markdown_report(path, username):
             # censored depth is a property of the row, not a reason to
             # delete the row.
             "depth": depth_from_section(section),
-            "refute_depth": UNMEASURED,
-            "seconds_spent": None,
-            "pre_error_bucket": "",
+            "refute_depth": table_row.get("refute_depth", UNMEASURED),
+            "seconds_spent": table_row.get("seconds_spent"),
+            "pre_error_bucket": table_row.get("pre_error_bucket", ""),
         })
     rec.provenance = parse_provenance(text)
     return rec
