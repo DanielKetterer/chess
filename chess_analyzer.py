@@ -86,9 +86,10 @@ PRE_ERROR_BUCKETS = ("winning", "balanced", "losing")
 
 # --- puzzle gates ----------------------------------------------------------
 # Kept as named constants so the rejection tally can report which one bound.
-PUZZLE_CATEGORIES = ("missed_tactic", "allowed_tactic", "endgame")
+PUZZLE_CATEGORIES = ("brilliant_sacrifice", "missed_tactic", "allowed_tactic",
+                     "endgame")
 PUZZLE_REFUTE_MIN = 3
-PUZZLE_REFUTE_MAX = 8
+PUZZLE_REFUTE_MAX = 6
 # Uniqueness floor: how much better the best move must be than the second best
 # before the position has one right answer worth grading.
 #
@@ -107,6 +108,31 @@ PUZZLE_WP_GAP_MIN = ERROR_THRESHOLDS["inaccuracy"]
 # metric with positions that were genuinely difficult.
 ATTENTION_REFUTE_MAX = 2
 ATTENTION_REQUIRES_FINDABLE = "obvious"
+
+# --- brilliant sacrifice ---------------------------------------------------
+# Two separate questions here, and the second is the strict one.
+#
+# Whether a move is a sacrifice is a material question, answered by walking
+# the principal variation and looking for a trough: material goes down and the
+# engine still calls the move best. That subsumes what a static exchange
+# evaluation would tell us about the destination square, and it also catches
+# quiet sacrifices, where the material is offered somewhere other than where
+# the piece moved.
+#
+# Whether a sacrifice makes a *puzzle* is Spielmann's distinction. A sham
+# sacrifice returns the material by force inside the line, so the position is
+# calculable to the end and an engine comparison can score an answer right or
+# wrong. A real sacrifice buys positional compensation that never resolves
+# back into material. That is not gradable, for exactly the reason positional
+# errors do not make puzzles: no unique answer, and no way to verify you
+# solved it. Real sacrifices are detected and reported, never served.
+SAC_EXCHANGE_TROUGH = 1.5      # pawns; exchange-sacrifice territory
+SAC_PIECE_TROUGH = 3.0         # a whole minor piece or more
+SAC_RECOVERY_TOLERANCE = 0.5   # "material came back" means within half a pawn
+SAC_MIN_PV_PLIES = 6           # a shorter line cannot show recovery either way
+SAC_MIN_PRE_EVAL_CP = -200     # not already lost
+SAC_MAX_PRE_EVAL_CP = 300      # not already crushing; a sac from +5 is decoration
+SAC_MIN_PLY = 21               # coarse gambit guard, refined by book_ply later
 
 
 
@@ -402,6 +428,7 @@ class MoveAnalysis:
     seconds_spent: object = None
     refute_depth: object = None
     pre_error_bucket: str = ""
+    sacrifice: object = None       # dict from classify_sacrifice, or None
     refute_threshold_used: object = None   # per-move bar, scales with wp_loss
     refutation_uci: str = ""      # opponent's punishing reply, allowed_tactic only
     refutation_san: str = ""
@@ -536,6 +563,136 @@ def material_balance(board):
     return total
 
 
+def is_en_prise(board, square, owner):
+    """The piece on `square` is already losing itself: undefended, or attacked
+    by something cheaper than it."""
+    piece = board.piece_at(square)
+    if piece is None:
+        return False
+    attackers = board.attackers(not owner, square)
+    if not attackers:
+        return False
+    defenders = board.attackers(owner, square)
+    values = [PIECE_VALUES[board.piece_at(a).piece_type] for a in attackers
+              if board.piece_at(a) is not None]
+    if not values:
+        return False
+    return (not defenders) or min(values) < PIECE_VALUES[piece.piece_type]
+
+
+def material_profile(board_before, pv, color):
+    """Material shape of the engine's main line, from `color`'s side.
+
+    Everything is in pawns, relative to the material balance before the first
+    PV move. `trough` is the deepest deficit reached, `final` is where the
+    line ends up.
+    """
+    sign = 1 if color == "white" else -1
+    start = sign * material_balance(board_before)
+    board = board_before.copy()
+    trough = 0.0
+    trough_ply = None
+    final = 0.0
+    plies = 0
+    for i, move in enumerate(pv or []):
+        if move not in board.legal_moves:
+            break                      # truncated or stale PV; use what we have
+        board.push(move)
+        plies += 1
+        diff = sign * material_balance(board) - start
+        if diff < trough:
+            trough, trough_ply = diff, i
+        final = diff
+    mates = board.is_checkmate() and board.turn != (color == "white")
+    return {"trough": round(trough, 2), "trough_ply": trough_ply,
+            "final": round(final, 2), "plies": plies, "mates": mates}
+
+
+def classify_sacrifice(board_before, best_move, pv, color):
+    """Describe the sacrifice in the engine's best line, or None.
+
+    `kind` is the field that decides whether this can ever be a puzzle:
+      "sham"  material returns by force, or the line mates. Gradable.
+      "real"  compensation is positional and never resolves. Not gradable.
+
+    See the SAC_ constants for why that distinction is doing the work.
+    """
+    profile = material_profile(board_before, pv, color)
+    if profile["plies"] < SAC_MIN_PV_PLIES:
+        return None
+    trough = profile["trough"]
+    if trough > -SAC_EXCHANGE_TROUGH:
+        return None                     # not enough material offered to count
+
+    us = chess.WHITE if color == "white" else chess.BLACK
+    recovered = profile["final"] >= -SAC_RECOVERY_TOLERANCE
+    return {
+        "trough_pawns": trough,
+        "final_pawns": profile["final"],
+        "trough_ply": profile["trough_ply"],
+        "pv_plies": profile["plies"],
+        "size": "piece" if trough <= -SAC_PIECE_TROUGH else "exchange",
+        "quiet": not board_before.is_capture(best_move),
+        "mates": profile["mates"],
+        "recovered": recovered,
+        "kind": "sham" if (recovered or profile["mates"]) else "real",
+        "desperado": is_en_prise(board_before, best_move.from_square, us),
+    }
+
+
+def sacrifice_is_brilliant(ma, sac):
+    """Gate a detected sacrifice into the puzzle category.
+
+    Rejections are recorded rather than dropped, so the report can show what
+    was found and refused.
+    """
+    if sac is None:
+        return False, "no_sacrifice"
+    if sac["kind"] != "sham":
+        return False, "real_sacrifice_not_gradable"
+    if sac["desperado"]:
+        return False, "desperado"       # the piece was already lost
+    if ma.ply <= SAC_MIN_PLY:
+        return False, "opening_ply"     # likely book; refined against book_ply
+    if ma.findable == ATTENTION_REQUIRES_FINDABLE:
+        return False, "obvious"         # a sacrifice you would find anyway
+    cp = ma.eval_before_cp
+    if cp is not None:
+        # eval_before_cp is white-relative, as it comes off score_to_parts.
+        # The band is about the sacrificing side, so it has to be flipped for
+        # Black or every Black sacrifice from a good position reads as
+        # out-of-band on the losing end.
+        if ma.color == "black":
+            cp = -cp
+        if not (SAC_MIN_PRE_EVAL_CP <= cp <= SAC_MAX_PRE_EVAL_CP):
+            return False, "eval_out_of_band"
+    return True, ""
+
+
+def demote_book_sacrifices(moves, opening):
+    """A gambit is a book pawn sacrifice, not one you found over the board.
+
+    Runs after identify_opening, which is the first point where book_ply
+    exists. SAC_MIN_PLY is the coarse guard applied during analysis; this is
+    the accurate one.
+    """
+    if not opening:
+        return 0
+    _, _, book_ply, _ = opening
+    if not book_ply:
+        return 0
+    demoted = 0
+    for m in moves:
+        if m.error_category == "brilliant_sacrifice" and m.ply <= book_ply:
+            m.error_category = "missed_tactic"
+            if isinstance(m.sacrifice, dict):
+                m.sacrifice = dict(m.sacrifice, rejected="in_book")
+            m.puzzle_prompt_type, m.puzzle_prompt = puzzle_prompt_for(
+                m.error_category, m.fen_before, m.san)
+            demoted += 1
+    return demoted
+
+
 def detect_motifs(board_before, best_move):
     """Cheap tactical-motif tags for the best move in this position."""
     motifs = []
@@ -638,10 +795,23 @@ def classify_error_category(ma, board_before, best_move, after_info, best_pv=Non
     the previous version computed it and threw it away, which left the study
     card with nothing correct to reveal.
     """
+    # Measure first, route second. Computing the sacrifice inside the branch
+    # that routes to it meant any sacrifice in a position that routed to
+    # `endgame` or `attention` was never detected at all, and vanished from
+    # the report rather than being listed and refused.
+    brilliant = False
+    if best_pv:
+        ma.sacrifice = classify_sacrifice(board_before, best_move, best_pv, ma.color)
+        brilliant, why = sacrifice_is_brilliant(ma, ma.sacrifice)
+        if not brilliant and ma.sacrifice is not None:
+            ma.sacrifice = dict(ma.sacrifice, rejected=why)
+
     if (isinstance(ma.refute_depth, int)
             and ma.refute_depth <= ATTENTION_REFUTE_MAX
             and ma.findable == ATTENTION_REQUIRES_FINDABLE):
         return "attention"
+    if brilliant:
+        return "brilliant_sacrifice"
     if piece_count(board_before) <= 7:
         return "endgame"
     if ma.error_type in ("tactical", "deep tactic"):
@@ -688,6 +858,10 @@ def puzzle_prompt_for(category, fen, played_san):
                 f"You want to play {played_san}. What is wrong with it?")
     if category == "endgame":
         return ("best_move", "Find the best move, and name the method.")
+    if category == "brilliant_sacrifice":
+        # Deliberately the same wording as missed_tactic. Announcing the
+        # sacrifice supplies the hard half of the problem.
+        return ("best_move", "Find the best move in this position.")
     return ("best_move", "Find the best move in this position.")
 
 def findability(board_before, best_move):
@@ -1354,6 +1528,25 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
               "is a product of four pass rates rather than a fault. Read the "
               "binding gate off this table before changing any threshold.")
             L("")
+
+    sacs = [m for m in player_moves if isinstance(m.sacrifice, dict)]
+    if sacs:
+        L("### Sacrifices in the engine's line")
+        L("")
+        L("Real sacrifices are listed but never served as puzzles: compensation "
+          "that never resolves back into material has no gradable answer.")
+        L("")
+        L("| Move | Offered | Kind | Quiet | Line ends | Verdict |")
+        L("|---|---|---|---|---|---|")
+        for m in sacs:
+            sac = m.sacrifice
+            ends = ("mate" if sac["mates"]
+                    else f"{sac['final_pawns']:+.1f} pawns")
+            verdict = sac.get("rejected") or "puzzle"
+            L(f"| {m.move_label} | {sac['trough_pawns']:.1f} ({sac['size']}) "
+              f"| {sac['kind']} | {'yes' if sac['quiet'] else 'no'} "
+              f"| {ends} | {verdict} |")
+        L("")
     if graph_path:
         L(f"![Evaluation graph]({os.path.basename(graph_path)})")
         L("")
@@ -1640,6 +1833,7 @@ def append_puzzles(path, meta, moves, player_color, generated_utc):
             "wp_loss": round(m.wp_loss, 1),
             "eval_before": fmt_eval(m.eval_before_cp, m.eval_before_mate),
             "pre_error_bucket": m.pre_error_bucket,
+            "sacrifice": m.sacrifice,
             "attempts": [],
             "source_game": meta.get("game_url") or meta.get("game_id", ""),
             "move_number": m.move_number,
@@ -1692,6 +1886,7 @@ def write_sidecar(path, meta, moves, player_color, analysis_params,
             "refute_threshold_wp": (None if m.refute_threshold_used is None
                                     else round(m.refute_threshold_used, 2)),
             "refutation": m.refutation_uci or None,
+            "sacrifice": m.sacrifice,
             "puzzle_reject": m.puzzle_reject or None,
             "findable": m.findable,
             "seconds_spent": None if m.seconds_spent is None or pd.isna(m.seconds_spent) else round(float(m.seconds_spent), 2),
@@ -1723,6 +1918,14 @@ def write_sidecar(path, meta, moves, player_color, analysis_params,
                 "fraction_of_wp_loss": REFUTE_THRESHOLD_FRACTION,
             },
             "refute_depth_cap": REFUTE_DEPTH_CAP,
+            "sacrifice_gates": {
+                "exchange_trough_pawns": SAC_EXCHANGE_TROUGH,
+                "piece_trough_pawns": SAC_PIECE_TROUGH,
+                "recovery_tolerance_pawns": SAC_RECOVERY_TOLERANCE,
+                "min_pv_plies": SAC_MIN_PV_PLIES,
+                "pre_eval_band_cp": [SAC_MIN_PRE_EVAL_CP, SAC_MAX_PRE_EVAL_CP],
+                "min_ply": SAC_MIN_PLY,
+            },
             "attention_requires": {
                 "refute_depth_max": ATTENTION_REFUTE_MAX,
                 "findable": ATTENTION_REQUIRES_FINDABLE,
@@ -1941,6 +2144,10 @@ def main():
     }
     book = load_opening_book(args.openings_dir)
     opening = identify_opening(moves, book)
+    demoted = demote_book_sacrifices(moves, opening)
+    if demoted:
+        print(f"Demoted {demoted} book sacrifice(s) to missed_tactic",
+              file=sys.stderr)
     colors = ["white", "black"] if args.perspective == "both" else [args.perspective]
     for color in colors:
         if args.perspective == "both":
