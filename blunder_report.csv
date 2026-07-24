@@ -1,1 +1,13 @@
 game_index,game_id,game_date,report_path,move_label,move_number,classification,error_type,wp_loss,depth
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,4.Bf4,4,inaccuracy,positional,6.0,<=floor
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,5.g3,5,mistake,positional,13.0,10
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,7.f3,7,inaccuracy,positional,8.0,<=floor
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,12.Ke2,12,inaccuracy,positional,10.0,<=floor
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,16.Bh3,16,blunder,tactical,39.0,7
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,17.Kf2,17,mistake,tactical,18.0,<=floor
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,19.Ke3,19,inaccuracy,positional,8.0,8
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,22.Qe3,22,inaccuracy,positional,7.0,12
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,23.Qd4,23,mistake,tactical,12.0,9
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,24.Qc4,24,inaccuracy,positional,8.0,<=floor
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,27.e5,27,inaccuracy,positional,7.0,11
+0,6cea6a25-85e6-11f1-8391-941ec601000f,2026.07.22,reports/171926193190_20260722T162748Z_white.md,28.Kb5,28,blunder,tactical,23.0,<=floor
