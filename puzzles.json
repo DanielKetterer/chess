@@ -257,5 +257,41 @@
     "source_game": "https://www.chess.com/game/live/171987878016",
     "move_number": 24,
     "date_generated": "2026-07-24T17:20:18Z"
+  },
+  {
+    "id": "pe7ded978e4",
+    "fen_before": "r1bk4/p1pp1ppp/7n/1p1N4/2Pr4/P2BK1P1/7P/3R3R b - - 1 21",
+    "move_played": "d4d3",
+    "move_played_san": "Rxd3+",
+    "best_move": "c7c5",
+    "best_move_san": "c5",
+    "refutation": "e3d3",
+    "refutation_san": "Kxd3",
+    "puzzle_type": "allowed_tactic",
+    "category": "allowed_tactic",
+    "prompt_type": "refutation",
+    "prompt": "You want to play Rxd3+. What is wrong with it?",
+    "best_second_wp_gap": 6.14,
+    "refute_depth": 3,
+    "wp_loss": 15.8,
+    "eval_before": "-4.42",
+    "pre_error_bucket": "winning",
+    "sacrifice": {
+      "trough_pawns": -5,
+      "final_pawns": 0,
+      "trough_ply": 19,
+      "pv_plies": 23,
+      "size": "piece",
+      "quiet": true,
+      "mates": false,
+      "recovered": true,
+      "kind": "sham",
+      "desperado": false,
+      "rejected": "obvious"
+    },
+    "attempts": [],
+    "source_game": "https://www.chess.com/game/daily/730191325",
+    "move_number": 21,
+    "date_generated": "2026-07-24T19:46:21Z"
   }
 ]
