@@ -333,7 +333,11 @@ class MoveAnalysis:
     cp_loss: object = None        # from mover's perspective, cp
     wp_loss: float = 0.0          # win-probability loss for the mover, 0..100
     classification: str = "good"
-    error_type: str = ""          # 'tactical' | 'positional' | ''
+    error_type: str = ""          # legacy: tactical/deep tactic/positional
+    error_category: str = ""      # missed_tactic/allowed_tactic/attention/positional/opening/endgame
+    puzzle_prompt_type: str = ""  # best_move/refutation
+    puzzle_prompt: str = ""
+    best_second_wp_gap: object = None
     only_move: bool = False
     crossed: str = ""             # 'winning->equal', 'equal->losing', etc.
     missed_mate: bool = False
@@ -551,6 +555,46 @@ def classify_error_type(board_before, played_move, best_move, wp_loss, pv=None):
         return "deep tactic"
     return "positional"
 
+
+
+def piece_count(board):
+    return sum(1 for piece in board.piece_map().values()
+               if piece.piece_type != chess.KING)
+
+
+def candidate_wp_gap_for_mover(candidates, color):
+    if len(candidates) < 2:
+        return None
+    w1, w2 = candidates[0][3], candidates[1][3]
+    return (w1 - w2) if color == "white" else (w2 - w1)
+
+
+def classify_error_category(ma, board_before, best_move, after_info):
+    """Classify an error for puzzle routing and metrics."""
+    if ma.refute_depth in (1, 2):
+        return "attention"
+    if piece_count(board_before) <= 7:
+        return "endgame"
+    if ma.error_type in ("tactical", "deep tactic"):
+        if board_before.is_capture(best_move) or board_before.gives_check(best_move) or ma.error_type == "deep tactic":
+            return "missed_tactic"
+    if after_info and after_info[0].get("pv"):
+        after_board = chess.Board(ma.fen_after)
+        opp_refutation = after_info[0]["pv"][0]
+        if (after_board.is_capture(opp_refutation) or
+                after_board.gives_check(opp_refutation) or
+                pv_is_forcing(after_board, after_info[0].get("pv"))):
+            return "allowed_tactic"
+    if ma.ply <= 20:
+        return "opening"
+    return "positional"
+
+
+def puzzle_prompt_for(category, fen, played_san):
+    if category == "allowed_tactic":
+        return ("refutation",
+                f"Position after my move {played_san}. What refutes that move?")
+    return ("best_move", "Find the best move in this position.")
 
 def findability(board_before, best_move):
     """Heuristic mode: how realistic was it to find the best move?"""
@@ -983,8 +1027,9 @@ def analyze_game(game_df, depth=14, multipv=3, progress=True,
                 # only-move: best clearly better than 2nd best, for the mover
                 if len(ma.candidates) >= 2:
                     w1 = ma.candidates[0][3]; w2 = ma.candidates[1][3]
-                    gap = (w1 - w2) if r.color == "white" else (w2 - w1)
-                    ma.only_move = gap >= 15
+                    gap = candidate_wp_gap_for_mover(ma.candidates, r.color)
+                    ma.best_second_wp_gap = None if gap is None else round(gap, 2)
+                    ma.only_move = gap is not None and gap >= 15
 
             wp_b, wp_a = ma.wp_before_mover(), ma.wp_after_mover()
             ma.wp_loss = max(0.0, wp_b - wp_a)
@@ -1010,6 +1055,8 @@ def analyze_game(game_df, depth=14, multipv=3, progress=True,
                     engine, board, played_mv, ma.color,
                     ERROR_THRESHOLDS.get(ma.classification, 5.0),
                     restore_threads=n_threads)
+                ma.error_category = classify_error_category(ma, board, best_mv, infos[i + 1])
+                ma.puzzle_prompt_type, ma.puzzle_prompt = puzzle_prompt_for(ma.error_category, ma.fen_before, ma.san)
                 if findability_mode == "honest":
                     ma.depth_to_find = depth_to_find(
                         engine, board, best_mv, cap=depth,
@@ -1159,11 +1206,11 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
     if errors:
         L("## Your errors, move by move")
         L("")
-        L("| Move | Class | Type | WP loss | Refute depth | Seconds spent | Pre-error eval |")
+        L("| Move | Class | Category | WP loss | Refute depth | Seconds spent | Pre-error eval |")
         L("|---|---|---|---:|---|---:|---|")
         for m in errors:
             spent = "" if m.seconds_spent is None or pd.isna(m.seconds_spent) else f"{float(m.seconds_spent):.0f}"
-            L(f"| {mv_label(m)} | {m.classification} | {m.error_type or 'unclear'} | "
+            L(f"| {mv_label(m)} | {m.classification} | {m.error_category or m.error_type or 'unclear'} | "
               f"{m.wp_loss:.0f}% | {m.refute_depth or ''} | {spent} | "
               f"{m.pre_error_bucket or ''} |")
         L("")
@@ -1195,9 +1242,12 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
     # habits
     L("## Patterns in this game")
     L("")
-    tact = sum(1 for m in errors if m.error_type == "tactical")
-    pos = sum(1 for m in errors if m.error_type == "positional")
-    L(f"- Error mix: {tact} tactical, {pos} positional.")
+    by_category = {}
+    for m in errors:
+        by_category[m.error_category or "unclear"] = by_category.get(m.error_category or "unclear", 0) + 1
+    attention_rate = 100 * by_category.get("attention", 0) / max(1, len(player_moves))
+    L("- Error categories: " + ", ".join(f"{v} {k}" for k, v in sorted(by_category.items())) + ".")
+    L(f"- Attention errors per 100 moves: {attention_rate:.1f}.")
     by_bucket = {bucket: sum(1 for m in errors if m.pre_error_bucket == bucket)
                  for bucket in PRE_ERROR_BUCKETS}
     if errors:
@@ -1312,13 +1362,21 @@ def puzzle_counts(path):
     return len(puzzles) - completed, completed
 
 
+def puzzle_eligible(m):
+    if m.error_category not in ("missed_tactic", "allowed_tactic", "endgame"):
+        return False
+    if not isinstance(m.refute_depth, int) or not (3 <= m.refute_depth <= 6):
+        return False
+    return m.best_second_wp_gap is not None and m.best_second_wp_gap >= 10
+
+
 def append_puzzles(path, meta, moves, player_color, generated_utc):
     puzzles = load_puzzles(path)
     seen = {p.get("fen_before") or p.get("fen") for p in puzzles}
     for m in moves:
         if m.color != player_color or m.classification not in ("inaccuracy", "mistake", "blunder"):
             continue
-        if not isinstance(m.refute_depth, int) or m.refute_depth > 6:
+        if not puzzle_eligible(m):
             continue
         if m.fen_before in seen:
             continue
@@ -1326,6 +1384,11 @@ def append_puzzles(path, meta, moves, player_color, generated_utc):
             "fen_before": m.fen_before,
             "move_played": m.uci,
             "best_move": m.best_move_uci,
+            "category": m.error_category,
+            "prompt_type": m.puzzle_prompt_type,
+            "prompt": m.puzzle_prompt,
+            "best_second_wp_gap": m.best_second_wp_gap,
+            "attempts": [],
             "source_game": meta.get("game_url") or meta.get("game_id", ""),
             "move_number": m.move_number,
             "date_generated": generated_utc,
@@ -1362,6 +1425,7 @@ def write_sidecar(path, meta, moves, player_color, analysis_params):
             "move_label": f"{m.move_number}{'...' if m.color == 'black' else '.'}{m.san}",
             "classification": m.classification,
             "error_type": m.error_type or "unclear",
+            "error_category": m.error_category or "",
             "wp_loss": round(m.wp_loss, 2),
             "cp_loss": m.cp_loss,
             "depth_to_find": m.depth_to_find,
@@ -1374,6 +1438,7 @@ def write_sidecar(path, meta, moves, player_color, analysis_params):
             "uci": m.uci,
             "best_move_san": m.best_move_san,
             "best_move_uci": m.best_move_uci,
+            "best_second_wp_gap": m.best_second_wp_gap,
         })
     payload = {
         "schema_version": 2,
@@ -1398,6 +1463,13 @@ def write_sidecar(path, meta, moves, player_color, analysis_params):
             "hash_mb": analysis_params.get("hash_mb"),
             "deterministic": analysis_params.get("deterministic", False),
             "generated_utc": analysis_params["generated_utc"],
+        },
+        "metrics": {
+            "player_moves": sum(1 for m in moves if m.color == player_color),
+            "attention_errors": sum(1 for m in moves if m.color == player_color and m.error_category == "attention"),
+            "attention_errors_per_100_moves": round(
+                100 * sum(1 for m in moves if m.color == player_color and m.error_category == "attention") /
+                max(1, sum(1 for m in moves if m.color == player_color)), 2),
         },
         # Written even when empty: a game with no errors is a real observation
         # and belongs in the denominator.
