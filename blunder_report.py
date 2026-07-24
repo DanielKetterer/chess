@@ -331,7 +331,7 @@ def rolling(values, window=10):
 # Rendering
 # ---------------------------------------------------------------------------
 
-def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=40):
+def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=0):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -372,9 +372,11 @@ def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=40):
                    s=[r.wp_loss * 6.0 for r in sel], c=color, alpha=0.72,
                    edgecolors="white", linewidths=0.5, zorder=3, label=label)
 
-    # Fixed limits so successive renders overlay. Autoscaling to the data
-    # meant a single game produced an x axis of -1 to 1.
-    ax.set_xlim(-1, max(min_games, n_games))
+    # Keep every analyzed game visible without stretching the default render
+    # out to future games that do not exist yet. Callers that want consistent
+    # overlay dimensions can still opt in with --min-games-axis.
+    x_max = max(min_games, n_games) - 0.5
+    ax.set_xlim(-0.5, x_max)
     ax.set_ylim(0, 62)
     ax.set_xlabel("game index (chronological)")
     ax.set_ylabel("move number")
@@ -499,9 +501,9 @@ def main():
     parser.add_argument("--cap", type=int, default=None,
                         help="override ladder cap (default: read from report "
                              "provenance, else 24)")
-    parser.add_argument("--min-games-axis", type=int, default=40,
-                        help="minimum x-axis width so early renders overlay "
-                             "with later ones")
+    parser.add_argument("--min-games-axis", type=int, default=0,
+                        help="minimum number of game slots to show on the "
+                             "x-axis; defaults to the analyzed game count")
     args = parser.parse_args()
 
     root = Path(args.reports_dir)
