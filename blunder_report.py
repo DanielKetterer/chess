@@ -297,8 +297,12 @@ def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=40):
             first_serious[r.game_index] = (
                 r.move_number if cur is None else min(cur, r.move_number))
 
-    fig = plt.figure(figsize=(13, 9))
-    gs = fig.add_gridspec(3, 1, height_ratios=[3, 1, 1], hspace=0.32)
+    fig = plt.figure(figsize=(15, 9))
+    # Reserve the right margin explicitly. bbox_inches="tight" does not
+    # reliably include legends anchored outside the axes, which is why the
+    # depth legend was rendering clipped.
+    gs = fig.add_gridspec(3, 1, height_ratios=[3, 1, 1], hspace=0.32,
+                          left=0.07, right=0.76, top=0.93, bottom=0.07)
     ax = fig.add_subplot(gs[0])
 
     for cat in order:
@@ -373,7 +377,7 @@ def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=40):
 
     prov = provenance_line(provenance, floor, cap, n_games, len(rows))
     fig.suptitle(prov, fontsize=8, color="#666666", x=0.01, ha="left", y=0.985)
-    fig.savefig(path, dpi=145, bbox_inches="tight", facecolor="white")
+    fig.savefig(path, dpi=145, facecolor="white")
     plt.close(fig)
 
 
@@ -407,7 +411,7 @@ def write_markdown(rows, n_games, path, image_path, floor, cap, provenance):
         lines.append(
             f"| {row.game_index} | {row.game_id} | {row.game_date} | "
             f"{row.move_label} | {row.classification} | {row.error_type} | "
-            f"{row.wp_loss:.0f} | {row.depth} | {row.report_path} |")
+            f"{row.wp_loss:.1f} | {row.depth} | {row.report_path} |")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
