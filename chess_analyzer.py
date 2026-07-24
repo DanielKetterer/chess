@@ -946,6 +946,16 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
     L(f"Date: {meta['game_date']}  |  Time control: {meta['time_class']} "
       f"({meta['time_control']})  |  You played: {player_color}")
     L(f"Game ID: {meta['game_id']}")
+    if analysis_params:
+        # Provenance, in a form both a human and the collator can read.
+        # Without this the collator cannot know the ladder cap, and its depth
+        # bin labels silently describe a cap that is no longer in use.
+        L(f"Analysis: depth={analysis_params['depth']} "
+          f"multipv={analysis_params['multipv']} "
+          f"findability={analysis_params['findability']} "
+          f"floor={MEASUREMENT_FLOOR} stable_run={STABLE_RUN} "
+          f"engine={analysis_params.get('engine', 'stockfish')} "
+          f"generated={analysis_params['generated_utc']}")
     if meta.get("game_end_time_utc"):
         L(f"Game end time UTC: {meta['game_end_time_utc']}")
     L(f"Game: {meta['game_url']}")
@@ -1131,6 +1141,66 @@ def coach_paragraph(m, player_color):
     return " ".join(parts)
 
 
+def write_sidecar(path, meta, moves, player_color, analysis_params):
+    """Emit a machine-readable sidecar next to the markdown report.
+
+    The collator previously recovered its numbers by regexing the coaching
+    prose. That coupled the data pipeline to sentence wording: any phrasing
+    change silently dropped rows, and censored measurements (which have no
+    number in the prose at all) were dropped entirely, biasing the dataset
+    toward findable errors. Structured output removes that whole class of bug.
+
+    depth_to_find is written as-is, so the censoring sentinels survive as
+    strings rather than being coerced to integers that look measured.
+    """
+    errors = []
+    for m in moves:
+        if m.color != player_color:
+            continue
+        if m.classification not in ("inaccuracy", "mistake", "blunder"):
+            continue
+        errors.append({
+            "ply": m.ply,
+            "move_number": m.move_number,
+            "color": m.color,
+            "san": m.san,
+            "move_label": f"{m.move_number}{'...' if m.color == 'black' else '.'}{m.san}",
+            "classification": m.classification,
+            "error_type": m.error_type or "unclear",
+            "wp_loss": round(m.wp_loss, 2),
+            "cp_loss": m.cp_loss,
+            "depth_to_find": m.depth_to_find,
+            "findable": m.findable,
+            "best_move_san": m.best_move_san,
+        })
+    payload = {
+        "schema_version": 2,
+        "game_id": meta["game_id"],
+        "game_date": meta["game_date"],
+        "game_url": meta.get("game_url", ""),
+        "white": meta["white_username"],
+        "black": meta["black_username"],
+        "time_class": meta.get("time_class", ""),
+        "player_color": player_color,
+        "analysis": {
+            "depth": analysis_params["depth"],
+            "multipv": analysis_params["multipv"],
+            "findability": analysis_params["findability"],
+            "measurement_floor": MEASUREMENT_FLOOR,
+            "stable_run": STABLE_RUN,
+            "censored_low": DEPTH_CENSORED_LOW,
+            "censored_high": DEPTH_CENSORED_HIGH,
+            "engine": analysis_params.get("engine", "stockfish"),
+            "generated_utc": analysis_params["generated_utc"],
+        },
+        # Written even when empty: a game with no errors is a real observation
+        # and belongs in the denominator.
+        "errors": errors,
+    }
+    with open(path, "w") as f:
+        json.dump(payload, f, indent=2)
+
+
 def make_graph(moves, path, player_color):
     import matplotlib
     matplotlib.use("Agg")
@@ -1276,7 +1346,10 @@ def main():
         )
         with open(out_path, "w") as f:
             f.write(report)
+        sidecar_path = os.path.splitext(out_path)[0] + ".json"
+        write_sidecar(sidecar_path, meta, moves, color, analysis_params)
         print(f"Report ({color}) written to {out_path}", file=sys.stderr)
+        print(f"Sidecar ({color}) written to {sidecar_path}", file=sys.stderr)
 
 if __name__ == "__main__":
     main()
