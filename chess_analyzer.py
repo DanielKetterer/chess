@@ -54,6 +54,11 @@ STABLE_RUN = 3
 # downstream plot must treat them as categories.
 DEPTH_CENSORED_LOW = "<=floor"
 DEPTH_CENSORED_HIGH = ">cap"
+REFUTE_DEPTH_CENSORED_HIGH = ">18"
+REFUTE_DEPTH_CAP = 18
+ERROR_THRESHOLDS = {"inaccuracy": 5.0, "mistake": 10.0, "blunder": 20.0}
+PRE_ERROR_BUCKETS = ("winning", "balanced", "losing")
+
 
 
 # ----------------------------------------------------------------------------
@@ -193,6 +198,7 @@ def game_to_dataframe(game, username):
             "san": board.san(move),
             "uci": board.uci(move),
             "clock_seconds": pgn_clock_seconds(node),
+            "seconds_spent": None,
             "fen_before": board.fen(),
         }
         board.push(move)
@@ -201,7 +207,38 @@ def game_to_dataframe(game, username):
 
     if not rows:
         raise RuntimeError("The selected game contains no analyzable moves.")
+    add_seconds_spent(rows, game.get("time_control", ""))
     return pd.DataFrame(rows)
+
+
+
+def parse_increment_seconds(time_control):
+    """Return increment seconds from Chess.com time_control, if present."""
+    if not isinstance(time_control, str):
+        return None
+    match = re.search(r"\+(\d+)", time_control)
+    return float(match.group(1)) if match else 0.0
+
+
+def add_seconds_spent(rows, time_control):
+    """Fill seconds_spent from per-color clock readings, tolerating gaps."""
+    increment = parse_increment_seconds(time_control)
+    previous = {"white": None, "black": None}
+    base = None
+    if isinstance(time_control, str):
+        match = re.match(r"^(\d+)(?:\+\d+)?$", time_control)
+        if match:
+            base = float(match.group(1))
+    for row in rows:
+        clk = row.get("clock_seconds")
+        color = row.get("color")
+        spent = None
+        if clk is not None and increment is not None and color in previous:
+            prev = previous[color] if previous[color] is not None else base
+            if prev is not None:
+                spent = max(0.0, prev - float(clk) + increment)
+            previous[color] = float(clk)
+        row["seconds_spent"] = spent
 
 
 def fetch_chesscom_game(username, game_id=None):
@@ -304,6 +341,9 @@ class MoveAnalysis:
     depth_to_find: object = None  # honest mode: shallowest depth engine prefers best
     notes: list = field(default_factory=list)
     clock_seconds: object = None
+    seconds_spent: object = None
+    refute_depth: object = None
+    pre_error_bucket: str = ""
 
     def wp_before_mover(self):
         wp = cp_to_winprob(self.eval_before_cp or 0, self.eval_before_mate)
@@ -598,6 +638,51 @@ def depth_to_find(engine, board, best_move, cap=14, restore_threads=None):
             engine.configure({"Threads": restore_threads})
 
 
+
+def eval_for_move(engine, board, move, depth):
+    info = engine.analyse(board, chess.engine.Limit(depth=depth), root_moves=[move])
+    return score_to_parts(info["score"])
+
+
+def mover_winprob_from_eval(cp, mate, color):
+    wp = cp_to_winprob(cp or 0, mate)
+    return wp if color == "white" else 100.0 - wp
+
+
+def refute_depth(engine, board, played_move, color, threshold, cap=REFUTE_DEPTH_CAP,
+                 restore_threads=None):
+    """Shallowest depth where played move loses at least threshold WP points."""
+    engine.configure({"Threads": 1})
+    try:
+        engine.configure({"Clear Hash": None})
+    except chess.engine.EngineError:
+        if restore_threads:
+            engine.configure({"Threads": restore_threads})
+        return None
+    try:
+        for d in range(1, cap + 1):
+            best = engine.analyse(board, chess.engine.Limit(depth=d))
+            best_cp, best_mate = score_to_parts(best["score"])
+            played_cp, played_mate = eval_for_move(engine, board, played_move, d)
+            loss = (mover_winprob_from_eval(best_cp, best_mate, color) -
+                    mover_winprob_from_eval(played_cp, played_mate, color))
+            if loss >= threshold:
+                return d
+        return REFUTE_DEPTH_CENSORED_HIGH
+    finally:
+        if restore_threads:
+            engine.configure({"Threads": restore_threads})
+
+
+def pre_error_bucket(move):
+    wp = move.wp_before_mover()
+    if wp >= 65:
+        return "winning"
+    if wp <= 35:
+        return "losing"
+    return "balanced"
+
+
 def findability_from_depth(d, cap=14):
     """Map a possibly-censored depth measurement to a coaching label."""
     if d is None:
@@ -876,7 +961,8 @@ def analyze_game(game_df, depth=14, multipv=3, progress=True,
                 ply=r.ply, move_number=r.move_number, color=r.color,
                 san=r.san, uci=r.uci,
                 fen_before=r.fen_before, fen_after=r.fen_after,
-                clock_seconds=getattr(r, "clock_seconds", None))
+                clock_seconds=getattr(r, "clock_seconds", None),
+                seconds_spent=getattr(r, "seconds_spent", None))
             ma.eval_before_cp, ma.eval_before_mate = evals[i]
             ma.eval_after_cp, ma.eval_after_mate = evals[i + 1]
             board = chess.Board(r.fen_before)
@@ -919,6 +1005,11 @@ def analyze_game(game_df, depth=14, multipv=3, progress=True,
                 ma.error_type = classify_error_type(
                     board, played_mv, best_mv, ma.wp_loss,
                     pv=info[0].get("pv"))
+                ma.pre_error_bucket = pre_error_bucket(ma)
+                ma.refute_depth = refute_depth(
+                    engine, board, played_mv, ma.color,
+                    ERROR_THRESHOLDS.get(ma.classification, 5.0),
+                    restore_threads=n_threads)
                 if findability_mode == "honest":
                     ma.depth_to_find = depth_to_find(
                         engine, board, best_mv, cap=depth,
@@ -967,7 +1058,7 @@ def phase_of(ply):
 
 
 def build_report(meta, moves, opening, player_color, graph_path=None,
-                 analysis_params=None):
+                 analysis_params=None, puzzle_stats=None):
     eco, name, book_ply, deviation_ply = opening
     lines = []
     L = lines.append
@@ -1029,6 +1120,8 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
     L("Blunder: WP loss is 20 points or more, or a forced mate is missed with at least 10 points of WP loss.\n")
     L("See: https://support.chess.com/en/articles/8572705-how-are-moves-classified-what-is-a-blunder-or-brilliant-etc \n")
     L("(Brillint, Great and Miss are rating subjective)")
+    if puzzle_stats:
+        L(f"- Puzzles: {puzzle_stats[0]} open, {puzzle_stats[1]} completed")
     if graph_path:
         L(f"![Evaluation graph]({os.path.basename(graph_path)})")
         L("")
@@ -1066,6 +1159,14 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
     if errors:
         L("## Your errors, move by move")
         L("")
+        L("| Move | Class | Type | WP loss | Refute depth | Seconds spent | Pre-error eval |")
+        L("|---|---|---|---:|---|---:|---|")
+        for m in errors:
+            spent = "" if m.seconds_spent is None or pd.isna(m.seconds_spent) else f"{float(m.seconds_spent):.0f}"
+            L(f"| {mv_label(m)} | {m.classification} | {m.error_type or 'unclear'} | "
+              f"{m.wp_loss:.0f}% | {m.refute_depth or ''} | {spent} | "
+              f"{m.pre_error_bucket or ''} |")
+        L("")
         for m in errors:
             L(f"### {mv_label(m)} ({m.classification}, "
               f"{m.error_type or 'unclear'}, wp loss {m.wp_loss:.0f}%)")
@@ -1097,6 +1198,11 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
     tact = sum(1 for m in errors if m.error_type == "tactical")
     pos = sum(1 for m in errors if m.error_type == "positional")
     L(f"- Error mix: {tact} tactical, {pos} positional.")
+    by_bucket = {bucket: sum(1 for m in errors if m.pre_error_bucket == bucket)
+                 for bucket in PRE_ERROR_BUCKETS}
+    if errors:
+        L("- Pre-error eval buckets: " + ", ".join(
+            f"{by_bucket[b]} {b}" for b in PRE_ERROR_BUCKETS) + ".")
     by_phase = {}
     for m in errors:
         by_phase.setdefault(phase_of(m.ply), []).append(m)
@@ -1175,6 +1281,61 @@ def coach_paragraph(m, player_color):
     return " ".join(parts)
 
 
+
+def load_puzzles(path):
+    if not path or not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    return data if isinstance(data, list) else data.get("puzzles", [])
+
+
+def save_puzzles(path, puzzles):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(puzzles, f, indent=2)
+
+
+def mark_puzzle_completed(path, fen):
+    puzzles = load_puzzles(path)
+    changed = False
+    for puzzle in puzzles:
+        if puzzle.get("fen_before") == fen or puzzle.get("fen") == fen:
+            puzzle["completed"] = True
+            changed = True
+    save_puzzles(path, puzzles)
+    return changed, len(puzzles)
+
+
+def puzzle_counts(path):
+    puzzles = load_puzzles(path)
+    completed = sum(1 for p in puzzles if p.get("completed"))
+    return len(puzzles) - completed, completed
+
+
+def append_puzzles(path, meta, moves, player_color, generated_utc):
+    puzzles = load_puzzles(path)
+    seen = {p.get("fen_before") or p.get("fen") for p in puzzles}
+    for m in moves:
+        if m.color != player_color or m.classification not in ("inaccuracy", "mistake", "blunder"):
+            continue
+        if not isinstance(m.refute_depth, int) or m.refute_depth > 6:
+            continue
+        if m.fen_before in seen:
+            continue
+        puzzles.append({
+            "fen_before": m.fen_before,
+            "move_played": m.uci,
+            "best_move": m.best_move_uci,
+            "source_game": meta.get("game_url") or meta.get("game_id", ""),
+            "move_number": m.move_number,
+            "date_generated": generated_utc,
+            "completed": False,
+        })
+        seen.add(m.fen_before)
+    save_puzzles(path, puzzles)
+    return puzzle_counts(path)
+
+
 def write_sidecar(path, meta, moves, player_color, analysis_params):
     """Emit a machine-readable sidecar next to the markdown report.
 
@@ -1204,8 +1365,15 @@ def write_sidecar(path, meta, moves, player_color, analysis_params):
             "wp_loss": round(m.wp_loss, 2),
             "cp_loss": m.cp_loss,
             "depth_to_find": m.depth_to_find,
+            "refute_depth": m.refute_depth,
             "findable": m.findable,
+            "seconds_spent": None if m.seconds_spent is None or pd.isna(m.seconds_spent) else round(float(m.seconds_spent), 2),
+            "pre_error_eval": fmt_eval(m.eval_before_cp, m.eval_before_mate),
+            "pre_error_bucket": m.pre_error_bucket,
+            "fen_before": m.fen_before,
+            "uci": m.uci,
             "best_move_san": m.best_move_san,
+            "best_move_uci": m.best_move_uci,
         })
     payload = {
         "schema_version": 2,
@@ -1249,7 +1417,7 @@ def make_graph(moves, path, player_color):
         xs.append(m.ply)
         ys.append(wp if player_color == "white" else 100 - wp)  # changed
 
-    fig, ax = plt.subplots(figsize=(10, 3.4))
+    fig, (ax, ax_time) = plt.subplots(2, 1, figsize=(10, 5.4), height_ratios=[3, 2])
     ax.plot(xs, ys, lw=1.6)
     ax.axhline(50, color="gray", lw=0.7, ls="--")
     ax.fill_between(xs, 50, ys, where=[y >= 50 for y in ys], alpha=0.15)
@@ -1264,6 +1432,17 @@ def make_graph(moves, path, player_color):
     ax.set_ylabel(f"{player_color.title()} win probability %")  # changed
     ax.set_ylim(0, 100)
     ax.set_title("Evaluation (win probability). Red lines mark blunders.")
+
+    errors = [m for m in moves if m.color == player_color and
+              m.classification in ("inaccuracy", "mistake", "blunder") and
+              m.seconds_spent is not None]
+    if errors:
+        ax_time.scatter([m.seconds_spent for m in errors], [m.wp_loss for m in errors],
+                        s=32, alpha=0.75)
+    ax_time.set_xlabel("seconds spent")
+    ax_time.set_ylabel("WP loss")
+    ax_time.set_title("Error clock use: time spent vs win-probability loss")
+    ax_time.grid(alpha=0.2)
     fig.tight_layout()
     fig.savefig(path, dpi=130)
     plt.close(fig)
@@ -1288,7 +1467,7 @@ def pick_game(df, selector):
 
 def main():
     ap = argparse.ArgumentParser()
-    source = ap.add_mutually_exclusive_group(required=True)
+    source = ap.add_mutually_exclusive_group(required=False)
     source.add_argument("--username", help="Chess.com username to fetch")
     source.add_argument("--csv", help="existing Chess.com move-history CSV")
     ap.add_argument(
@@ -1325,7 +1504,21 @@ def main():
                          "with --out report.md, both mode writes report_white.md "
                          "and report_black.md")
     ap.add_argument("--openings-dir", default="")
+    ap.add_argument("--puzzles-file", default="puzzles.json",
+                    help="persistent JSON puzzle file for refute-depth <= 6 errors")
+    ap.add_argument("--mark-completed", metavar="FEN",
+                    help="mark a puzzle completed by FEN and exit")
     args = ap.parse_args()
+
+    if args.mark_completed:
+        changed, total = mark_puzzle_completed(args.puzzles_file, args.mark_completed)
+        open_count, completed_count = puzzle_counts(args.puzzles_file)
+        print(f"{'marked' if changed else 'no matching'} puzzle; "
+              f"{open_count} open, {completed_count} completed, {total} total")
+        return
+
+    if not args.username and not args.csv:
+        ap.error("one of --username or --csv is required unless --mark-completed is used")
 
     if args.username:
         args.username = args.username.strip()
@@ -1340,6 +1533,11 @@ def main():
             ap.error(str(exc))
     else:
         df = pd.read_csv(args.csv, dtype={"game_id": str})
+        if "seconds_spent" not in df.columns and "clock_seconds" in df.columns:
+            rows = df.sort_values("ply").to_dict("records")
+            add_seconds_spent(rows, str(rows[0].get("time_control", "")) if rows else "")
+            spent = {row.get("ply"): row.get("seconds_spent") for row in rows}
+            df["seconds_spent"] = df["ply"].map(spent)
 
     if args.list:
         g = df.groupby("game_id").agg(
@@ -1387,18 +1585,20 @@ def main():
         if args.perspective == "both":
             base, ext = os.path.splitext(args.out)
             out_path = f"{base}_{color}{ext}"
-    
+
             graph_base, graph_ext = os.path.splitext(args.graph)
             graph_path = f"{graph_base}_{color}{graph_ext}"
         else:
             out_path = args.out
             graph_path = args.graph
-    
+
         make_graph(moves, graph_path, color)
-    
+
+        puzzle_stats = append_puzzles(args.puzzles_file, meta, moves, color,
+                                      analysis_params["generated_utc"])
         report = build_report(
             meta, moves, opening, color, graph_path=graph_path,
-            analysis_params=analysis_params
+            analysis_params=analysis_params, puzzle_stats=puzzle_stats
         )
         with open(out_path, "w") as f:
             f.write(report)
