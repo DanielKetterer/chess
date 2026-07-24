@@ -19,6 +19,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import io
 import json
 import math
@@ -56,8 +57,23 @@ DEPTH_CENSORED_LOW = "<=floor"
 DEPTH_CENSORED_HIGH = ">cap"
 REFUTE_DEPTH_CENSORED_HIGH = ">18"
 REFUTE_DEPTH_CAP = 18
+# Classification bands, for labelling moves in the report only.
 ERROR_THRESHOLDS = {"inaccuracy": 5.0, "mistake": 10.0, "blunder": 20.0}
+# One fixed bar for refute-depth, for every error class. Feeding the
+# per-class threshold in made refute_depth mean something different in every
+# row: inaccuracies crossed a 5-point bar on shallow-search noise and landed
+# in `attention`, while blunders needed a 20-point swing and censored high.
+# A depth is only comparable across rows if the bar it crossed is the same.
+REFUTE_THRESHOLD_WP = 10.0
 PRE_ERROR_BUCKETS = ("winning", "balanced", "losing")
+
+# --- puzzle gates ----------------------------------------------------------
+# Kept as named constants so the rejection tally can report which one bound.
+PUZZLE_CATEGORIES = ("missed_tactic", "allowed_tactic", "endgame")
+PUZZLE_REFUTE_MIN = 3
+PUZZLE_REFUTE_MAX = 6
+PUZZLE_WP_GAP_MIN = 10.0
+ATTENTION_REFUTE_MAX = 2
 
 
 
@@ -306,6 +322,11 @@ def score_to_parts(score: chess.engine.PovScore):
 def fmt_eval(cp, mate):
     if mate is not None:
         return f"M{mate}" if mate > 0 else f"-M{abs(mate)}"
+    if cp is None:
+        # Both unset means the position was never scored. Formatting that as
+        # +0.00 would put a fabricated evaluation into the report and the
+        # puzzle record; an empty string is the honest rendering.
+        return ""
     return f"{cp/100:+.2f}"
 
 
@@ -348,6 +369,9 @@ class MoveAnalysis:
     seconds_spent: object = None
     refute_depth: object = None
     pre_error_bucket: str = ""
+    refutation_uci: str = ""      # opponent's punishing reply, allowed_tactic only
+    refutation_san: str = ""
+    puzzle_reject: str = ""       # which gate rejected this error, "" if eligible
 
     def wp_before_mover(self):
         wp = cp_to_winprob(self.eval_before_cp or 0, self.eval_before_mate)
@@ -569,14 +593,31 @@ def candidate_wp_gap_for_mover(candidates, color):
     return (w1 - w2) if color == "white" else (w2 - w1)
 
 
-def classify_error_category(ma, board_before, best_move, after_info):
-    """Classify an error for puzzle routing and metrics."""
-    if ma.refute_depth in (1, 2):
+def classify_error_category(ma, board_before, best_move, after_info, best_pv=None):
+    """Classify an error for puzzle routing and metrics.
+
+    Also records the opponent's punishing reply on `ma` when the category is
+    allowed_tactic. That move is the answer to an allowed_tactic prompt, and
+    the previous version computed it and threw it away, which left the study
+    card with nothing correct to reveal.
+    """
+    if isinstance(ma.refute_depth, int) and ma.refute_depth <= ATTENTION_REFUTE_MAX:
         return "attention"
     if piece_count(board_before) <= 7:
         return "endgame"
     if ma.error_type in ("tactical", "deep tactic"):
-        if board_before.is_capture(best_move) or board_before.gives_check(best_move) or ma.error_type == "deep tactic":
+        # A quiet key move with a forcing follow-up is the best puzzle material
+        # there is. Requiring the best move itself to be a capture or check
+        # excluded exactly that class and dumped it into `positional`.
+        quiet_but_tactical = (
+            pv_is_forcing(board_before, best_pv)
+            or any(mv not in ("capture", "check")
+                   for mv in detect_motifs(board_before, best_move))
+        )
+        if (board_before.is_capture(best_move)
+                or board_before.gives_check(best_move)
+                or ma.error_type == "deep tactic"
+                or quiet_but_tactical):
             return "missed_tactic"
     if after_info and after_info[0].get("pv"):
         after_board = chess.Board(ma.fen_after)
@@ -584,6 +625,11 @@ def classify_error_category(ma, board_before, best_move, after_info):
         if (after_board.is_capture(opp_refutation) or
                 after_board.gives_check(opp_refutation) or
                 pv_is_forcing(after_board, after_info[0].get("pv"))):
+            ma.refutation_uci = opp_refutation.uci()
+            try:
+                ma.refutation_san = after_board.san(opp_refutation)
+            except (ValueError, AssertionError):
+                ma.refutation_san = ""
             return "allowed_tactic"
     if ma.ply <= 20:
         return "opening"
@@ -591,9 +637,18 @@ def classify_error_category(ma, board_before, best_move, after_info):
 
 
 def puzzle_prompt_for(category, fen, played_san):
+    """Prompt text, in the same frame as the FEN that gets stored.
+
+    The stored position is `fen_before`, i.e. before the played move. The old
+    allowed_tactic wording said "position after my move", so prompt and board
+    disagreed by a ply and the solver was looking at the wrong side of the
+    move they were being asked about.
+    """
     if category == "allowed_tactic":
         return ("refutation",
-                f"Position after my move {played_san}. What refutes that move?")
+                f"You want to play {played_san}. What is wrong with it?")
+    if category == "endgame":
+        return ("best_move", "Find the best move, and name the method.")
     return ("best_move", "Find the best move in this position.")
 
 def findability(board_before, best_move):
@@ -693,24 +748,84 @@ def mover_winprob_from_eval(cp, mate, color):
     return wp if color == "white" else 100.0 - wp
 
 
-def refute_depth(engine, board, played_move, color, threshold, cap=REFUTE_DEPTH_CAP,
-                 restore_threads=None):
-    """Shallowest depth where played move loses at least threshold WP points."""
-    engine.configure({"Threads": 1})
+def _wp_by_depth(engine, board, color, cap, root_moves=None):
+    """One iterative-deepening pass; mover-relative WP at each iteration.
+
+    Returns a list of length `cap`, entries None where no info arrived.
+    Returns None if the hash could not be cleared, which invalidates the
+    measurement rather than silently answering from the previous pass.
+    """
     try:
         engine.configure({"Clear Hash": None})
     except chess.engine.EngineError:
-        if restore_threads:
-            engine.configure({"Threads": restore_threads})
         return None
+    out = [None] * cap
+    kwargs = {"root_moves": root_moves} if root_moves else {}
+    with engine.analysis(board, chess.engine.Limit(depth=cap), **kwargs) as an:
+        for info in an:
+            d = info.get("depth")
+            score = info.get("score")
+            if d and 1 <= d <= cap and score is not None:
+                cp, mate = score_to_parts(score)
+                out[d - 1] = mover_winprob_from_eval(cp, mate, color)
+    return out
+
+
+def refute_depth(engine, board, played_move, color,
+                 threshold=REFUTE_THRESHOLD_WP, cap=REFUTE_DEPTH_CAP,
+                 restore_threads=None):
+    """Shallowest depth at which the played move is already visibly losing at
+    least `threshold` WP points, and stays that way for STABLE_RUN consecutive
+    depths.
+
+    This function previously violated both of the correctness requirements
+    that depth_to_find's docstring spells out, twenty lines above it:
+
+    1. First-match semantics. It returned the first depth where the loss
+       crossed the bar, with no stability requirement, so a crossing that
+       appeared at depth d and vanished at d + 1 was recorded as the answer.
+    2. Transposition-table carryover. It cleared the hash once and then ran a
+       fresh `engine.analyse` per rung inside that single clear, so rung d was
+       answered partly from tables built by rungs 1..d-1. depth_to_find
+       measured that same leak as reporting depth 5 where a clean pass
+       reported 9.
+
+    Both biases point downward. Errors were being assigned depths shallower
+    than they deserved, which routed them into `attention` and under the
+    puzzle floor of PUZZLE_REFUTE_MIN. The empty puzzle file was partly
+    manufactured by the measurement.
+
+    The fix mirrors depth_to_find: Threads = 1 so nominal depth means search
+    depth, one iterative-deepening pass per side of the comparison with a
+    hash clear between them, and a stable run before a depth counts.
+
+    Unlike depth_to_find, a run that would extend past the cap is not
+    accepted short. A crossing first seen at cap - 1 is not evidence of a
+    stable crossing, and treating it as one would reintroduce the first-match
+    problem at the top of the ladder.
+
+    Returns:
+      int                        measured depth, 1 <= d <= cap
+      REFUTE_DEPTH_CENSORED_HIGH never stably crossed within cap
+      None                       measurement invalid (hash clear failed)
+    """
+    engine.configure({"Threads": 1})
     try:
-        for d in range(1, cap + 1):
-            best = engine.analyse(board, chess.engine.Limit(depth=d))
-            best_cp, best_mate = score_to_parts(best["score"])
-            played_cp, played_mate = eval_for_move(engine, board, played_move, d)
-            loss = (mover_winprob_from_eval(best_cp, best_mate, color) -
-                    mover_winprob_from_eval(played_cp, played_mate, color))
-            if loss >= threshold:
+        best_wp = _wp_by_depth(engine, board, color, cap)
+        if best_wp is None:
+            return None
+        played_wp = _wp_by_depth(engine, board, color, cap,
+                                 root_moves=[played_move])
+        if played_wp is None:
+            return None
+
+        crossed = [
+            best_wp[i] is not None and played_wp[i] is not None
+            and (best_wp[i] - played_wp[i]) >= threshold
+            for i in range(cap)
+        ]
+        for d in range(1, cap - STABLE_RUN + 2):
+            if all(crossed[d - 1: d - 1 + STABLE_RUN]):
                 return d
         return REFUTE_DEPTH_CENSORED_HIGH
     finally:
@@ -1053,9 +1168,9 @@ def analyze_game(game_df, depth=14, multipv=3, progress=True,
                 ma.pre_error_bucket = pre_error_bucket(ma)
                 ma.refute_depth = refute_depth(
                     engine, board, played_mv, ma.color,
-                    ERROR_THRESHOLDS.get(ma.classification, 5.0),
                     restore_threads=n_threads)
-                ma.error_category = classify_error_category(ma, board, best_mv, infos[i + 1])
+                ma.error_category = classify_error_category(
+                    ma, board, best_mv, infos[i + 1], best_pv=info[0].get("pv"))
                 ma.puzzle_prompt_type, ma.puzzle_prompt = puzzle_prompt_for(ma.error_category, ma.fen_before, ma.san)
                 if findability_mode == "honest":
                     ma.depth_to_find = depth_to_find(
@@ -1168,7 +1283,25 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
     L("See: https://support.chess.com/en/articles/8572705-how-are-moves-classified-what-is-a-blunder-or-brilliant-etc \n")
     L("(Brillint, Great and Miss are rating subjective)")
     if puzzle_stats:
-        L(f"- Puzzles: {puzzle_stats[0]} open, {puzzle_stats[1]} completed")
+        L(f"- Puzzles: {puzzle_stats[0]} open, {puzzle_stats[1]} solved")
+        tally = puzzle_stats[2] if len(puzzle_stats) > 2 else None
+        if tally:
+            L("")
+            L("### Puzzle gate tally (this game)")
+            L("")
+            L(f"Gates: category in {list(PUZZLE_CATEGORIES)}, "
+              f"refute depth in [{PUZZLE_REFUTE_MIN}, {PUZZLE_REFUTE_MAX}], "
+              f"best-vs-second WP gap >= {PUZZLE_WP_GAP_MIN:.0f}.")
+            L("")
+            L("| outcome | errors |")
+            L("|---|---|")
+            for key in sorted(tally, key=lambda k: (k != "accepted", k)):
+                L(f"| {key} | {tally[key]} |")
+            L("")
+            L("Four gates pass at once or nothing is generated, so a zero here "
+              "is a product of four pass rates rather than a fault. Read the "
+              "binding gate off this table before changing any threshold.")
+            L("")
     if graph_path:
         L(f"![Evaluation graph]({os.path.basename(graph_path)})")
         L("")
@@ -1345,12 +1478,31 @@ def save_puzzles(path, puzzles):
         json.dump(puzzles, f, indent=2)
 
 
-def mark_puzzle_completed(path, fen):
+def puzzle_attempts(puzzle):
+    """Attempt log, migrating the legacy `completed` boolean on read."""
+    attempts = puzzle.get("attempts")
+    if isinstance(attempts, list) and attempts:
+        return attempts
+    if puzzle.get("completed"):
+        return [{"timestamp": puzzle.get("completed_at"), "found": True}]
+    return []
+
+
+def mark_puzzle_attempt(path, fen, found=True, seconds=None):
+    """Append to the attempt log. A boolean cannot distinguish solved-first-try
+    from solved-after-three-failures, and the second list is the one worth
+    studying."""
     puzzles = load_puzzles(path)
     changed = False
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
     for puzzle in puzzles:
         if puzzle.get("fen_before") == fen or puzzle.get("fen") == fen:
-            puzzle["completed"] = True
+            attempts = puzzle_attempts(puzzle)
+            attempts.append({"timestamp": stamp, "found": bool(found),
+                             "seconds": seconds})
+            puzzle["attempts"] = attempts
+            puzzle.pop("completed", None)       # single schema from here on
+            puzzle.pop("completed_at", None)
             changed = True
     save_puzzles(path, puzzles)
     return changed, len(puzzles)
@@ -1358,48 +1510,103 @@ def mark_puzzle_completed(path, fen):
 
 def puzzle_counts(path):
     puzzles = load_puzzles(path)
-    completed = sum(1 for p in puzzles if p.get("completed"))
-    return len(puzzles) - completed, completed
+    solved = sum(1 for p in puzzles
+                 if any(a.get("found") for a in puzzle_attempts(p)))
+    return len(puzzles) - solved, solved
+
+
+def puzzle_rejection_reason(m):
+    """None if the error becomes a puzzle, else the name of the first gate
+    that stopped it.
+
+    Four gates have to pass at once, so the yield per game is a product of
+    four pass rates and can sit near zero without anything being broken. The
+    tally is what distinguishes an over-tight gate from a broken measurement,
+    and those need opposite fixes.
+    """
+    if m.error_category not in PUZZLE_CATEGORIES:
+        return f"category:{m.error_category or 'unclassified'}"
+    if m.refute_depth is None:
+        return "refute_unmeasured"
+    if not isinstance(m.refute_depth, int):
+        return "refute_censored_high"
+    if m.refute_depth < PUZZLE_REFUTE_MIN:
+        return "refute_too_shallow"
+    if m.refute_depth > PUZZLE_REFUTE_MAX:
+        return "refute_too_deep"
+    if m.best_second_wp_gap is None:
+        return "wp_gap_unmeasured"
+    if m.best_second_wp_gap < PUZZLE_WP_GAP_MIN:
+        return "wp_gap_too_small"
+    if m.error_category == "allowed_tactic" and not m.refutation_uci:
+        return "no_refutation_recorded"
+    return None
 
 
 def puzzle_eligible(m):
-    if m.error_category not in ("missed_tactic", "allowed_tactic", "endgame"):
-        return False
-    if not isinstance(m.refute_depth, int) or not (3 <= m.refute_depth <= 6):
-        return False
-    return m.best_second_wp_gap is not None and m.best_second_wp_gap >= 10
+    return puzzle_rejection_reason(m) is None
 
 
 def append_puzzles(path, meta, moves, player_color, generated_utc):
+    """Returns (open, solved, tally). The tally counts every error against the
+    gate that rejected it, plus `accepted` and `duplicate_fen`."""
     puzzles = load_puzzles(path)
     seen = {p.get("fen_before") or p.get("fen") for p in puzzles}
+    tally = {}
+
+    def bump(reason):
+        tally[reason] = tally.get(reason, 0) + 1
+
     for m in moves:
         if m.color != player_color or m.classification not in ("inaccuracy", "mistake", "blunder"):
             continue
-        if not puzzle_eligible(m):
+        reason = puzzle_rejection_reason(m)
+        m.puzzle_reject = reason or ""
+        if reason:
+            bump(reason)
             continue
         if m.fen_before in seen:
+            bump("duplicate_fen")
+            m.puzzle_reject = "duplicate_fen"
             continue
+        bump("accepted")
         puzzles.append({
+            "id": puzzle_id_for(m, meta),
             "fen_before": m.fen_before,
             "move_played": m.uci,
+            "move_played_san": m.san,
             "best_move": m.best_move_uci,
-            "category": m.error_category,
+            "best_move_san": m.best_move_san,
+            "refutation": m.refutation_uci or None,
+            "refutation_san": m.refutation_san or None,
+            "puzzle_type": m.error_category,
+            "category": m.error_category,          # back-compat
             "prompt_type": m.puzzle_prompt_type,
             "prompt": m.puzzle_prompt,
             "best_second_wp_gap": m.best_second_wp_gap,
+            "refute_depth": m.refute_depth,
+            "wp_loss": round(m.wp_loss, 1),
+            "eval_before": fmt_eval(m.eval_before_cp, m.eval_before_mate),
+            "pre_error_bucket": m.pre_error_bucket,
             "attempts": [],
             "source_game": meta.get("game_url") or meta.get("game_id", ""),
             "move_number": m.move_number,
             "date_generated": generated_utc,
-            "completed": False,
         })
         seen.add(m.fen_before)
     save_puzzles(path, puzzles)
-    return puzzle_counts(path)
+    open_count, solved = puzzle_counts(path)
+    return open_count, solved, tally
 
 
-def write_sidecar(path, meta, moves, player_color, analysis_params):
+def puzzle_id_for(m, meta):
+    """Stable id. Index selectors shift on every append and dedupe."""
+    seed = f"{meta.get('game_id', '')}|{m.fen_before}"
+    return "p" + hashlib.sha1(seed.encode("utf-8")).hexdigest()[:10]
+
+
+def write_sidecar(path, meta, moves, player_color, analysis_params,
+                  puzzle_tally=None):
     """Emit a machine-readable sidecar next to the markdown report.
 
     The collator previously recovered its numbers by regexing the coaching
@@ -1430,6 +1637,9 @@ def write_sidecar(path, meta, moves, player_color, analysis_params):
             "cp_loss": m.cp_loss,
             "depth_to_find": m.depth_to_find,
             "refute_depth": m.refute_depth,
+            "refute_threshold_wp": REFUTE_THRESHOLD_WP,
+            "refutation": m.refutation_uci or None,
+            "puzzle_reject": m.puzzle_reject or None,
             "findable": m.findable,
             "seconds_spent": None if m.seconds_spent is None or pd.isna(m.seconds_spent) else round(float(m.seconds_spent), 2),
             "pre_error_eval": fmt_eval(m.eval_before_cp, m.eval_before_mate),
@@ -1455,6 +1665,14 @@ def write_sidecar(path, meta, moves, player_color, analysis_params):
             "findability": analysis_params["findability"],
             "measurement_floor": MEASUREMENT_FLOOR,
             "stable_run": STABLE_RUN,
+            "refute_threshold_wp": REFUTE_THRESHOLD_WP,
+            "refute_depth_cap": REFUTE_DEPTH_CAP,
+            "puzzle_gates": {
+                "categories": list(PUZZLE_CATEGORIES),
+                "refute_min": PUZZLE_REFUTE_MIN,
+                "refute_max": PUZZLE_REFUTE_MAX,
+                "wp_gap_min": PUZZLE_WP_GAP_MIN,
+            },
             "censored_low": DEPTH_CENSORED_LOW,
             "censored_high": DEPTH_CENSORED_HIGH,
             "engine": analysis_params.get("engine", "stockfish"),
@@ -1464,6 +1682,7 @@ def write_sidecar(path, meta, moves, player_color, analysis_params):
             "deterministic": analysis_params.get("deterministic", False),
             "generated_utc": analysis_params["generated_utc"],
         },
+        "puzzle_gate_tally": puzzle_tally or {},
         "metrics": {
             "player_moves": sum(1 for m in moves if m.color == player_color),
             "attention_errors": sum(1 for m in moves if m.color == player_color and m.error_category == "attention"),
@@ -1577,20 +1796,30 @@ def main():
                          "and report_black.md")
     ap.add_argument("--openings-dir", default="")
     ap.add_argument("--puzzles-file", default="puzzles.json",
-                    help="persistent JSON puzzle file for refute-depth <= 6 errors")
-    ap.add_argument("--mark-completed", metavar="FEN",
-                    help="mark a puzzle completed by FEN and exit")
+                    help=(f"persistent JSON puzzle file for errors with refute "
+                          f"depth in [{PUZZLE_REFUTE_MIN}, {PUZZLE_REFUTE_MAX}]"))
+    ap.add_argument("--mark-completed", "--mark-solved", dest="mark_completed",
+                    metavar="FEN",
+                    help="record a successful attempt on a puzzle by FEN and exit")
+    ap.add_argument("--mark-missed", metavar="FEN",
+                    help="record a failed attempt on a puzzle by FEN and exit")
+    ap.add_argument("--attempt-seconds", type=float, default=None,
+                    help="seconds taken, stored with --mark-completed/--mark-missed")
     args = ap.parse_args()
 
-    if args.mark_completed:
-        changed, total = mark_puzzle_completed(args.puzzles_file, args.mark_completed)
-        open_count, completed_count = puzzle_counts(args.puzzles_file)
-        print(f"{'marked' if changed else 'no matching'} puzzle; "
-              f"{open_count} open, {completed_count} completed, {total} total")
+    if args.mark_completed or args.mark_missed:
+        fen = args.mark_completed or args.mark_missed
+        changed, total = mark_puzzle_attempt(
+            args.puzzles_file, fen, found=bool(args.mark_completed),
+            seconds=args.attempt_seconds)
+        open_count, solved_count = puzzle_counts(args.puzzles_file)
+        print(f"{'recorded attempt on' if changed else 'no matching'} puzzle; "
+              f"{open_count} open, {solved_count} solved, {total} total")
         return
 
     if not args.username and not args.csv:
-        ap.error("one of --username or --csv is required unless --mark-completed is used")
+        ap.error("one of --username or --csv is required unless "
+                 "--mark-completed or --mark-missed is used")
 
     if args.username:
         args.username = args.username.strip()
@@ -1675,7 +1904,17 @@ def main():
         with open(out_path, "w") as f:
             f.write(report)
         sidecar_path = os.path.splitext(out_path)[0] + ".json"
-        write_sidecar(sidecar_path, meta, moves, color, analysis_params)
+        write_sidecar(sidecar_path, meta, moves, color, analysis_params,
+                      puzzle_tally=puzzle_stats[2])
+        tally = puzzle_stats[2]
+        if tally:
+            print(f"Puzzle gates ({color}): " + ", ".join(
+                f"{k}={v}" for k, v in sorted(
+                    tally.items(), key=lambda kv: (kv[0] != "accepted", kv[0]))),
+                  file=sys.stderr)
+        else:
+            print(f"Puzzle gates ({color}): no errors to evaluate",
+                  file=sys.stderr)
         print(f"Report ({color}) written to {out_path}", file=sys.stderr)
         print(f"Sidecar ({color}) written to {sidecar_path}", file=sys.stderr)
 
