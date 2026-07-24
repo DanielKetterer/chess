@@ -61,10 +61,30 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Stockfish
+      - name: Install Stockfish 18
         run: |
-          sudo apt-get update
-          sudo apt-get install -y stockfish
+          release_api="https://api.github.com/repos/official-stockfish/Stockfish/releases/tags/sf_18"
+          curl -fsSL "$release_api" -o /tmp/stockfish-release.json
+          asset_url=$(python - <<'PY'
+          import json
+          from pathlib import Path
+
+          release = json.loads(Path("/tmp/stockfish-release.json").read_text())
+          for asset in release["assets"]:
+              name = asset["name"]
+              if "ubuntu" in name and "x86-64-avx2" in name and name.endswith(".tar"):
+                  print(asset["browser_download_url"])
+                  break
+          else:
+              raise SystemExit("Stockfish 18 Ubuntu x86-64 AVX2 asset not found")
+          PY
+          )
+          curl -fsSL "$asset_url" -o /tmp/stockfish.tar
+          mkdir -p /tmp/stockfish
+          tar -xf /tmp/stockfish.tar -C /tmp/stockfish
+          stockfish_bin=$(find /tmp/stockfish -type f -name 'stockfish*' -perm -111 | head -n 1)
+          sudo install -m 0755 "$stockfish_bin" /usr/local/bin/stockfish
+          echo quit | /usr/local/bin/stockfish
 
       - name: Install Python dependencies
         run: |
@@ -73,7 +93,7 @@ jobs:
 
       - name: Analyze game
         env:
-          STOCKFISH_PATH: /usr/games/stockfish
+          STOCKFISH_PATH: /usr/local/bin/stockfish
           USERNAME: ${{ inputs.username }}
           GAME_ID: ${{ inputs.game_id }}
           DEPTH: ${{ inputs.depth }}
