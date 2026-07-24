@@ -818,12 +818,28 @@ class MinuteProgress:
 
 
 def analyze_game(game_df, depth=14, multipv=3, progress=True,
-                 findability_mode="heuristic"):
+                 findability_mode="heuristic", threads=1, hash_mb=256,
+                 engine_info=None):
     game_df = game_df.sort_values("ply")
     moves = []
     engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-    n_threads = max(1, (os.cpu_count() or 2) - 1)
-    engine.configure({"Threads": n_threads, "Hash": 256})
+    # Threads defaults to 1, not to core count. Under Lazy SMP the helper
+    # threads race, so a fixed-depth search is not reproducible run to run:
+    # evaluations drift by a point or two and rows sitting near a
+    # classification threshold appear and disappear between runs. Anything
+    # above 1 trades reproducibility for wall time.
+    #
+    # Hash is pinned for the same reason: table size changes what survives
+    # eviction, which changes fixed-depth results.
+    n_threads = max(1, int(threads))
+    engine.configure({"Threads": n_threads, "Hash": int(hash_mb)})
+    # The engine build is part of the measurement. Two Stockfish versions do
+    # not agree at the same depth, and an unpinned `apt-get install stockfish`
+    # will upgrade underneath you without changing anything in this repo.
+    if engine_info is not None:
+        engine_info["engine_id"] = engine.id.get("name", "unknown")
+        engine_info["threads"] = n_threads
+        engine_info["hash_mb"] = int(hash_mb)
     limit = chess.engine.Limit(depth=depth)
     reporter = MinuteProgress() if progress else None
     try:
@@ -969,7 +985,10 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
           f"multipv={analysis_params['multipv']} "
           f"findability={analysis_params['findability']} "
           f"floor={MEASUREMENT_FLOOR} stable_run={STABLE_RUN} "
-          f"engine={analysis_params.get('engine', 'stockfish')} "
+          f"threads={analysis_params.get('threads', '?')} "
+          f"hash_mb={analysis_params.get('hash_mb', '?')} "
+          f"deterministic={analysis_params.get('deterministic', False)} "
+          f"engine_id={analysis_params.get('engine_id', 'unknown').replace(' ', '_')} "
           f"generated={analysis_params['generated_utc']}")
     if meta.get("game_end_time_utc"):
         L(f"Game end time UTC: {meta['game_end_time_utc']}")
@@ -1206,6 +1225,10 @@ def write_sidecar(path, meta, moves, player_color, analysis_params):
             "censored_low": DEPTH_CENSORED_LOW,
             "censored_high": DEPTH_CENSORED_HIGH,
             "engine": analysis_params.get("engine", "stockfish"),
+            "engine_id": analysis_params.get("engine_id", "unknown"),
+            "threads": analysis_params.get("threads"),
+            "hash_mb": analysis_params.get("hash_mb"),
+            "deterministic": analysis_params.get("deterministic", False),
             "generated_utc": analysis_params["generated_utc"],
         },
         # Written even when empty: a game with no errors is a real observation
@@ -1277,8 +1300,16 @@ def main():
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--depth", type=int, default=14)
     ap.add_argument("--multipv", type=int, default=3)
+    ap.add_argument("--threads", type=int, default=1,
+                    help="engine threads. Default 1, which is required for "
+                         "reproducible fixed-depth results: Lazy SMP makes "
+                         "multithreaded searches nondeterministic. Raise only "
+                         "if you accept that re-analysis will not reproduce.")
+    ap.add_argument("--hash-mb", type=int, default=256,
+                    help="engine hash in MB. Part of the measurement; "
+                         "changing it changes fixed-depth results.")
     ap.add_argument("--findability", choices=["heuristic", "honest"],
-                    default="honest",
+                    default="heuristic",
                     help="heuristic: cheap move-shape buckets. honest: measure "
                          "the shallowest depth at which the engine stably "
                          "prefers the best move, single-threaded with a cleared "
@@ -1330,13 +1361,23 @@ def main():
           f"({meta['game_date']}, {meta['time_class']}), "
           f"{len(gdf)} plies at depth {args.depth}...", file=sys.stderr)
 
+    engine_info = {}
     moves = analyze_game(gdf, depth=args.depth, multipv=args.multipv,
-                         findability_mode=args.findability)
+                         findability_mode=args.findability,
+                         threads=args.threads, hash_mb=args.hash_mb,
+                         engine_info=engine_info)
     analysis_params = {
         "depth": args.depth,
         "multipv": args.multipv,
         "findability": args.findability,
         "engine": os.path.basename(STOCKFISH_PATH),
+        # Everything below is required to reproduce a row. Without the engine
+        # build and thread count recorded, "same depth" is not the same
+        # measurement across runs.
+        "engine_id": engine_info.get("engine_id", "unknown"),
+        "threads": engine_info.get("threads", args.threads),
+        "hash_mb": engine_info.get("hash_mb", args.hash_mb),
+        "deterministic": engine_info.get("threads", args.threads) == 1,
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     book = load_opening_book(args.openings_dir)
