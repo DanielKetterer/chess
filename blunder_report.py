@@ -92,6 +92,9 @@ class ErrorRow:
     error_type: str
     wp_loss: float
     depth: object          # int, CENSORED_LOW, CENSORED_HIGH, or UNMEASURED
+    refute_depth: object = UNMEASURED
+    seconds_spent: object = None
+    pre_error_bucket: str = ""
 
 
 @dataclass
@@ -187,6 +190,9 @@ def parse_markdown_report(path, username):
             # censored depth is a property of the row, not a reason to
             # delete the row.
             "depth": depth_from_section(section),
+            "refute_depth": UNMEASURED,
+            "seconds_spent": None,
+            "pre_error_bucket": "",
         })
     rec.provenance = parse_provenance(text)
     return rec
@@ -207,7 +213,10 @@ def parse_sidecar(path, username):
             "classification": e["classification"],
             "error_type": e["error_type"],
             "wp_loss": float(e["wp_loss"]),
-            "depth": UNMEASURED if e["depth_to_find"] is None else e["depth_to_find"],
+            "depth": UNMEASURED if e.get("depth_to_find") is None else e.get("depth_to_find"),
+            "refute_depth": UNMEASURED if e.get("refute_depth") is None else e.get("refute_depth"),
+            "seconds_spent": e.get("seconds_spent"),
+            "pre_error_bucket": e.get("pre_error_bucket", ""),
         })
     rec.provenance = data.get("analysis", {})
     return rec
@@ -297,11 +306,11 @@ def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=40):
             first_serious[r.game_index] = (
                 r.move_number if cur is None else min(cur, r.move_number))
 
-    fig = plt.figure(figsize=(15, 9))
+    fig = plt.figure(figsize=(15, 11))
     # Reserve the right margin explicitly. bbox_inches="tight" does not
     # reliably include legends anchored outside the axes, which is why the
     # depth legend was rendering clipped.
-    gs = fig.add_gridspec(3, 1, height_ratios=[3, 1, 1], hspace=0.32,
+    gs = fig.add_gridspec(4, 1, height_ratios=[3, 1, 1, 1], hspace=0.42,
                           left=0.07, right=0.76, top=0.93, bottom=0.07)
     ax = fig.add_subplot(gs[0])
 
@@ -375,6 +384,17 @@ def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=40):
     ax3.set_title("move number of first blunder, 10-game rolling mean in blue",
                   fontsize=9, loc="left")
 
+    ax4 = fig.add_subplot(gs[3])
+    timed = [r for r in rows if r.seconds_spent not in (None, "")]
+    if timed:
+        ax4.scatter([float(r.seconds_spent) for r in timed], [r.wp_loss for r in timed],
+                    s=22, alpha=0.7, color="#4c8577")
+    ax4.set_xlabel("seconds spent")
+    ax4.set_ylabel("WP loss", fontsize=9)
+    ax4.grid(alpha=0.18)
+    ax4.set_title("time spent vs win-probability loss, one point per error",
+                  fontsize=9, loc="left")
+
     prov = provenance_line(provenance, floor, cap, n_games, len(rows))
     fig.suptitle(prov, fontsize=8, color="#666666", x=0.01, ha="left", y=0.985)
     fig.savefig(path, dpi=145, facecolor="white")
@@ -405,13 +425,15 @@ def write_markdown(rows, n_games, path, image_path, floor, cap, provenance):
     if image_path:
         lines.extend([f"![Blunder scatter]({os.path.basename(image_path)})", ""])
     lines.extend([
-        "| Game # | Game ID | Date | Move | Class | Type | WP loss | Depth | Report |",
-        "|---:|---|---|---|---|---|---:|---|---|"])
+        "| Game # | Game ID | Date | Move | Class | Type | WP loss | Depth | Refute | Seconds | Pre-error | Report |",
+        "|---:|---|---|---|---|---|---:|---|---|---:|---|---|"])
     for row in rows:
         lines.append(
             f"| {row.game_index} | {row.game_id} | {row.game_date} | "
             f"{row.move_label} | {row.classification} | {row.error_type} | "
-            f"{row.wp_loss:.1f} | {row.depth} | {row.report_path} |")
+            f"{row.wp_loss:.1f} | {row.depth} | {row.refute_depth} | "
+            f"{'' if row.seconds_spent is None else row.seconds_spent} | "
+            f"{row.pre_error_bucket} | {row.report_path} |")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
