@@ -59,12 +59,29 @@ REFUTE_DEPTH_CENSORED_HIGH = ">18"
 REFUTE_DEPTH_CAP = 18
 # Classification bands, for labelling moves in the report only.
 ERROR_THRESHOLDS = {"inaccuracy": 5.0, "mistake": 10.0, "blunder": 20.0}
-# One fixed bar for refute-depth, for every error class. Feeding the
-# per-class threshold in made refute_depth mean something different in every
-# row: inaccuracies crossed a 5-point bar on shallow-search noise and landed
-# in `attention`, while blunders needed a 20-point swing and censored high.
-# A depth is only comparable across rows if the bar it crossed is the same.
-REFUTE_THRESHOLD_WP = 10.0
+# The bar the played move must be seen to cross before it counts as refuted.
+#
+# Two wrong answers came before this one. Feeding in the per-class threshold
+# from ERROR_THRESHOLDS made the number mean something different in every row.
+# Replacing it with a flat 10.0 was worse in a way that took a real report to
+# see: `classify` calls a move an inaccuracy when it loses at least 5 and
+# under 10, so an inaccuracy's full-depth loss sits *below* a 10-point bar and
+# the crossing can only ever happen through shallow-search noise. The entire
+# inaccuracy band censored high by construction, and the two that did return a
+# depth returned depth 1 -- noise crossings, which then routed those moves into
+# `attention` and inflated a metric that was about to be trusted.
+#
+# Scaling the bar to the error asks every move the same question: how deep
+# before most of this move's cost is visible? The floor keeps tiny errors from
+# being declared refuted by a rounding difference.
+REFUTE_THRESHOLD_FLOOR_WP = 5.0
+REFUTE_THRESHOLD_FRACTION = 0.6
+
+
+def refute_threshold_for(wp_loss):
+    """Per-move refute bar. See REFUTE_THRESHOLD_FLOOR_WP above."""
+    return max(REFUTE_THRESHOLD_FLOOR_WP,
+               REFUTE_THRESHOLD_FRACTION * float(wp_loss or 0.0))
 PRE_ERROR_BUCKETS = ("winning", "balanced", "losing")
 
 # --- puzzle gates ----------------------------------------------------------
@@ -72,8 +89,24 @@ PRE_ERROR_BUCKETS = ("winning", "balanced", "losing")
 PUZZLE_CATEGORIES = ("missed_tactic", "allowed_tactic", "endgame")
 PUZZLE_REFUTE_MIN = 3
 PUZZLE_REFUTE_MAX = 6
-PUZZLE_WP_GAP_MIN = 10.0
+# Uniqueness floor: how much better the best move must be than the second best
+# before the position has one right answer worth grading.
+#
+# This was 10.0, which was a number invented without calibration. Across a
+# twelve-error game the observed gaps had a median near 2 and only two rows
+# cleared 10, so the gate was passing under a fifth of positions on its own.
+# Tying it to the inaccuracy band makes it mean something: if playing the
+# second-best move would itself be scored an inaccuracy, the position has a
+# unique answer by the same standard the rest of the report uses.
+PUZZLE_WP_GAP_MIN = ERROR_THRESHOLDS["inaccuracy"]
+
+# `attention` needs both halves, not just a shallow refutation. A move whose
+# refutation is visible at depth 1 but whose replacement takes depth 17 to find
+# is a hard position, not inattention -- that shape happens when many moves
+# lose and exactly one holds. Counting it as an attention error inflates the
+# metric with positions that were genuinely difficult.
 ATTENTION_REFUTE_MAX = 2
+ATTENTION_REQUIRES_FINDABLE = "obvious"
 
 
 
@@ -369,6 +402,7 @@ class MoveAnalysis:
     seconds_spent: object = None
     refute_depth: object = None
     pre_error_bucket: str = ""
+    refute_threshold_used: object = None   # per-move bar, scales with wp_loss
     refutation_uci: str = ""      # opponent's punishing reply, allowed_tactic only
     refutation_san: str = ""
     puzzle_reject: str = ""       # which gate rejected this error, "" if eligible
@@ -596,12 +630,17 @@ def candidate_wp_gap_for_mover(candidates, color):
 def classify_error_category(ma, board_before, best_move, after_info, best_pv=None):
     """Classify an error for puzzle routing and metrics.
 
+    Requires `ma.findable` to be populated before it is called, since the
+    attention branch tests it.
+
     Also records the opponent's punishing reply on `ma` when the category is
     allowed_tactic. That move is the answer to an allowed_tactic prompt, and
     the previous version computed it and threw it away, which left the study
     card with nothing correct to reveal.
     """
-    if isinstance(ma.refute_depth, int) and ma.refute_depth <= ATTENTION_REFUTE_MAX:
+    if (isinstance(ma.refute_depth, int)
+            and ma.refute_depth <= ATTENTION_REFUTE_MAX
+            and ma.findable == ATTENTION_REQUIRES_FINDABLE):
         return "attention"
     if piece_count(board_before) <= 7:
         return "endgame"
@@ -772,7 +811,7 @@ def _wp_by_depth(engine, board, color, cap, root_moves=None):
 
 
 def refute_depth(engine, board, played_move, color,
-                 threshold=REFUTE_THRESHOLD_WP, cap=REFUTE_DEPTH_CAP,
+                 threshold, cap=REFUTE_DEPTH_CAP,
                  restore_threads=None):
     """Shallowest depth at which the played move is already visibly losing at
     least `threshold` WP points, and stays that way for STABLE_RUN consecutive
@@ -803,6 +842,12 @@ def refute_depth(engine, board, played_move, color,
     accepted short. A crossing first seen at cap - 1 is not evidence of a
     stable crossing, and treating it as one would reintroduce the first-match
     problem at the top of the ladder.
+
+    `threshold` is required rather than defaulted, because the right bar
+    depends on the size of the error being measured. A flat bar asks a harder
+    question of small errors than large ones: an inaccuracy loses under 10 WP
+    by definition, so a 10-point bar could only be crossed by shallow-search
+    noise and the whole band censored high. Use refute_threshold_for.
 
     Returns:
       int                        measured depth, 1 <= d <= cap
@@ -1166,12 +1211,9 @@ def analyze_game(game_df, depth=14, multipv=3, progress=True,
                     board, played_mv, best_mv, ma.wp_loss,
                     pv=info[0].get("pv"))
                 ma.pre_error_bucket = pre_error_bucket(ma)
-                ma.refute_depth = refute_depth(
-                    engine, board, played_mv, ma.color,
-                    restore_threads=n_threads)
-                ma.error_category = classify_error_category(
-                    ma, board, best_mv, infos[i + 1], best_pv=info[0].get("pv"))
-                ma.puzzle_prompt_type, ma.puzzle_prompt = puzzle_prompt_for(ma.error_category, ma.fen_before, ma.san)
+                # Findability is measured before the category is assigned, because
+                # the attention branch now needs both halves: a shallow refutation
+                # AND an easy replacement move.
                 if findability_mode == "honest":
                     ma.depth_to_find = depth_to_find(
                         engine, board, best_mv, cap=depth,
@@ -1179,6 +1221,14 @@ def analyze_game(game_df, depth=14, multipv=3, progress=True,
                     ma.findable = findability_from_depth(ma.depth_to_find, cap=depth)
                 else:
                     ma.findable = findability(board, best_mv)
+                ma.refute_threshold_used = refute_threshold_for(ma.wp_loss)
+                ma.refute_depth = refute_depth(
+                    engine, board, played_mv, ma.color,
+                    ma.refute_threshold_used,
+                    restore_threads=n_threads)
+                ma.error_category = classify_error_category(
+                    ma, board, best_mv, infos[i + 1], best_pv=info[0].get("pv"))
+                ma.puzzle_prompt_type, ma.puzzle_prompt = puzzle_prompt_for(ma.error_category, ma.fen_before, ma.san)
                 # interpretation notes
                 b_after = chess.Board(r.fen_after)
                 hang = hanging_pieces(b_after, chess.WHITE if r.color == "white" else chess.BLACK)
@@ -1291,7 +1341,9 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
             L("")
             L(f"Gates: category in {list(PUZZLE_CATEGORIES)}, "
               f"refute depth in [{PUZZLE_REFUTE_MIN}, {PUZZLE_REFUTE_MAX}], "
-              f"best-vs-second WP gap >= {PUZZLE_WP_GAP_MIN:.0f}.")
+              f"best-vs-second WP gap >= {PUZZLE_WP_GAP_MIN:.0f}. "
+              f"Refute bar per move: max({REFUTE_THRESHOLD_FLOOR_WP:.0f}, "
+              f"{REFUTE_THRESHOLD_FRACTION:g} x WP loss).")
             L("")
             L("| outcome | errors |")
             L("|---|---|")
@@ -1637,7 +1689,8 @@ def write_sidecar(path, meta, moves, player_color, analysis_params,
             "cp_loss": m.cp_loss,
             "depth_to_find": m.depth_to_find,
             "refute_depth": m.refute_depth,
-            "refute_threshold_wp": REFUTE_THRESHOLD_WP,
+            "refute_threshold_wp": (None if m.refute_threshold_used is None
+                                    else round(m.refute_threshold_used, 2)),
             "refutation": m.refutation_uci or None,
             "puzzle_reject": m.puzzle_reject or None,
             "findable": m.findable,
@@ -1665,8 +1718,15 @@ def write_sidecar(path, meta, moves, player_color, analysis_params,
             "findability": analysis_params["findability"],
             "measurement_floor": MEASUREMENT_FLOOR,
             "stable_run": STABLE_RUN,
-            "refute_threshold_wp": REFUTE_THRESHOLD_WP,
+            "refute_threshold_rule": {
+                "floor_wp": REFUTE_THRESHOLD_FLOOR_WP,
+                "fraction_of_wp_loss": REFUTE_THRESHOLD_FRACTION,
+            },
             "refute_depth_cap": REFUTE_DEPTH_CAP,
+            "attention_requires": {
+                "refute_depth_max": ATTENTION_REFUTE_MAX,
+                "findable": ATTENTION_REQUIRES_FINDABLE,
+            },
             "puzzle_gates": {
                 "categories": list(PUZZLE_CATEGORIES),
                 "refute_min": PUZZLE_REFUTE_MIN,
