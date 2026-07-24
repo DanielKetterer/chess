@@ -89,7 +89,7 @@ PRE_ERROR_BUCKETS = ("winning", "balanced", "losing")
 PUZZLE_CATEGORIES = ("brilliant_sacrifice", "missed_tactic", "allowed_tactic",
                      "endgame")
 PUZZLE_REFUTE_MIN = 3
-PUZZLE_REFUTE_MAX = 6
+PUZZLE_REFUTE_MAX = 8
 # Uniqueness floor: how much better the best move must be than the second best
 # before the position has one right answer worth grading.
 #
