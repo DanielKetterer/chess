@@ -26,12 +26,14 @@ ERROR_HEADING_RE = re.compile(
     re.MULTILINE,
 )
 DEPTH_RE = re.compile(
-    r"engine (?:first prefers|prefers|does not prefer) this move (?:from |until )search depth\s+(\d+)",
+    r"engine (?:first prefers|prefers|does not prefer) this move "
+    r"(?:from |at |until )?(?:search )?depth\s+(\d+)",
     re.IGNORECASE,
 )
 GAME_RE = re.compile(r"^Game:\s*(\S+)", re.MULTILINE)
 DATE_RE = re.compile(r"^Date:\s*([^|\n]+)", re.MULTILINE)
-TITLE_RE = re.compile(r"^#.*Game analysis:\s*(.+)$", re.MULTILINE)
+TITLE_RE = re.compile(r"^#.*Game analysis:\s*(?P<white>.+?)\s+vs\s+(?P<black>.+?)\s*$", re.MULTILINE)
+YOU_PLAYED_RE = re.compile(r"You played:\s*(white|black)", re.IGNORECASE)
 
 
 @dataclass
@@ -66,12 +68,33 @@ def date_from_text(text, path):
     return datetime.fromtimestamp(path.stat().st_mtime).isoformat(timespec="seconds")
 
 
-def parse_report(path):
+def report_is_for_username(text, username):
+    """Return True when this perspective report is for username.
+
+    The analyzer writes one report per perspective; each report's "Your errors"
+    section belongs to the side named in "You played". Filtering here prevents
+    opponent perspective files from being collated as the user's blunders.
+    """
+    title = TITLE_RE.search(text)
+    perspective = YOU_PLAYED_RE.search(text)
+    if not title or not perspective:
+        return False
+    played = perspective.group(1).casefold()
+    report_user = title.group(played).strip().casefold()
+    return report_user == username.strip().casefold()
+
+
+def parse_report(path, username):
     text = path.read_text(encoding="utf-8")
+    if not report_is_for_username(text, username):
+        return []
     game_id = game_id_from_text(text, path)
     game_date = date_from_text(text, path)
     title = TITLE_RE.search(text)
-    game_label = title.group(1).strip() if title else game_id
+    game_label = (
+        f"{title.group('white').strip()} vs {title.group('black').strip()}"
+        if title else game_id
+    )
     rows = []
     matches = list(ERROR_HEADING_RE.finditer(text))
     for idx, match in enumerate(matches):
@@ -182,12 +205,14 @@ def main():
     parser.add_argument("--out", default="blunder_report.md")
     parser.add_argument("--csv", default="blunder_report.csv")
     parser.add_argument("--graph", default="blunder_scatter.png")
+    parser.add_argument("--username", default="DanielKetterer",
+                        help="Only include perspective reports whose 'You played' side is this Chess.com user.")
     args = parser.parse_args()
 
     paths = sorted(Path(args.reports_dir).glob("**/*.md"))
     raw_rows = []
     for path in paths:
-        raw_rows.extend(parse_report(path))
+        raw_rows.extend(parse_report(path, args.username))
     game_order = {gid: i for i, gid in enumerate(dict.fromkeys(row["game_id"] for row in sorted(raw_rows, key=lambda r: (r["game_date"], r["game_id"]))))}
     rows = [ErrorRow(game_index=game_order[row["game_id"]], **{k: v for k, v in row.items() if k != "game_label"}) for row in raw_rows]
     rows.sort(key=lambda r: (r.game_index, r.move_number, r.report_path))
@@ -196,9 +221,14 @@ def main():
         writer = csv.DictWriter(f, fieldnames=list(ErrorRow.__dataclass_fields__))
         writer.writeheader()
         writer.writerows([row.__dict__ for row in rows])
+    image_path = args.graph if rows else ""
     if rows:
-        render_scatter(rows, args.graph)
-    write_markdown(rows, Path(args.out), args.graph if rows else "")
+        try:
+            render_scatter(rows, args.graph)
+        except ImportError as exc:
+            print(f"Could not render scatter plot: {exc}")
+            image_path = ""
+    write_markdown(rows, Path(args.out), image_path)
 
 
 if __name__ == "__main__":

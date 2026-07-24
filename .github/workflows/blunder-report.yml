@@ -2,6 +2,12 @@ name: Blunder Report
 
 on:
   workflow_dispatch:
+    inputs:
+      username:
+        description: Chess.com username to include in the report
+        required: true
+        default: DanielKetterer
+        type: string
   push:
     paths:
       - "reports/**/*.md"
@@ -36,12 +42,15 @@ jobs:
           python -m pip install matplotlib
 
       - name: Generate blunder report
+        env:
+          USERNAME: ${{ inputs.username || 'DanielKetterer' }}
         run: |
           python blunder_report.py \
             --reports-dir reports \
             --out blunder_report.md \
             --csv blunder_report.csv \
-            --graph blunder_scatter.png
+            --graph blunder_scatter.png \
+            --username "$USERNAME"
 
       - name: Commit blunder report to repository
         env:
