@@ -844,6 +844,9 @@ def build_report(meta, moves, opening, player_color, graph_path=None):
     L("")
     L(f"Date: {meta['game_date']}  |  Time control: {meta['time_class']} "
       f"({meta['time_control']})  |  You played: {player_color}")
+    L(f"Game ID: {meta['game_id']}")
+    if meta.get("game_end_time_utc"):
+        L(f"Game end time UTC: {meta['game_end_time_utc']}")
     L(f"Game: {meta['game_url']}")
     L("")
 
