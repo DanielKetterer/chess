@@ -6,7 +6,7 @@ Depth column: an integer is a measured depth. `<=floor` means the engine stably 
 
 ![Blunder scatter](blunder_scatter.png)
 
-| Game # | Game ID | Date | Move | Class | Type | WP loss | Depth | Refute | Seconds | Pre-error | Report |
+| Game # | Game ID | Date | Move | Class | Category | WP loss | Depth | Refute | Seconds | Pre-error | Report |
 |---:|---|---|---|---|---|---:|---|---|---:|---|---|
 | 0 | 6cea6a25-85e6-11f1-8391-941ec601000f | 2026.07.22 | 4.Bf4 | inaccuracy | positional | 8.0 | <=floor | 2 | 26 | balanced | reports/171926193190_20260722T162748Z_white.md |
 | 0 | 6cea6a25-85e6-11f1-8391-941ec601000f | 2026.07.22 | 5.g3 | mistake | positional | 14.0 | 23 | 8 | 32 | balanced | reports/171926193190_20260722T162748Z_white.md |
