@@ -1,0 +1,6 @@
+game_index,game_id,game_date,report_path,move_label,move_number,classification,error_type,wp_loss,depth
+0,171926193190,2026.07.22,reports/171926193190_20260722T162748Z_white.md,5.g3,5,mistake,positional,13.0,10
+0,171926193190,2026.07.22,reports/171926193190_20260722T162748Z_white.md,16.Bh3,16,blunder,tactical,37.0,7
+0,171926193190,2026.07.22,reports/171926193190_20260722T162748Z_white.md,18.Nxh3,18,inaccuracy,positional,6.0,7
+0,171926193190,2026.07.22,reports/171926193190_20260722T162748Z_white.md,19.Ke3,19,inaccuracy,positional,7.0,8
+0,171926193190,2026.07.22,reports/171926193190_20260722T162748Z_white.md,23.Qd4,23,mistake,tactical,12.0,9

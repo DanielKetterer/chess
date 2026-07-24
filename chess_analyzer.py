@@ -42,6 +42,19 @@ CHESSCOM_API_ROOT = "https://api.chess.com/pub"
 PIECE_VALUES = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3,
                 chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
 
+# --- depth-to-find measurement constants -----------------------------------
+# Below MEASUREMENT_FLOOR the search is dominated by qsearch and material
+# counting, so "the engine prefers another move" is not evidence about the
+# move played. Results at or below the floor are censored, not measured.
+MEASUREMENT_FLOOR = 6
+# Consecutive agreeing depths required before a depth counts as the answer,
+# so a preference that flaps at one depth is not recorded at its first flap.
+STABLE_RUN = 3
+# Sentinels for censored measurements. Not ints: the report and any
+# downstream plot must treat them as categories.
+DEPTH_CENSORED_LOW = "<=floor"
+DEPTH_CENSORED_HIGH = ">cap"
+
 
 # ----------------------------------------------------------------------------
 # Chess.com game retrieval
@@ -448,8 +461,38 @@ def detect_motifs(board_before, best_move):
     return motifs
 
 
-def classify_error_type(board_before, played_move, best_move, wp_loss):
-    """Tactical vs positional, heuristic."""
+def pv_is_forcing(board_before, pv, plies=6, threshold=0.5):
+    """True if at least `threshold` of the first `plies` moves of the engine's
+    principal variation are checks or captures.
+
+    The one-ply signals below cannot see a combination that only crystallizes
+    several moves in: the refutation starts with a quiet move and the tactic
+    lands later. Such errors get tagged positional purely because the shape at
+    ply one is quiet. Walking the PV catches them.
+    """
+    if not pv:
+        return False
+    b = board_before.copy()
+    forcing = 0
+    counted = 0
+    for mv in pv[:plies]:
+        if mv not in b.legal_moves:
+            break
+        if b.is_capture(mv) or b.gives_check(mv):
+            forcing += 1
+        counted += 1
+        b.push(mv)
+    return counted > 0 and (forcing / counted) >= threshold
+
+
+def classify_error_type(board_before, played_move, best_move, wp_loss, pv=None):
+    """Tactical vs positional, heuristic.
+
+    Returns 'tactical', 'deep tactic', or 'positional'. 'deep tactic' means
+    the one-ply signals were all quiet but the engine's own continuation is
+    forcing, which is the signature of a combination missed several moves out
+    rather than a judgment error.
+    """
     b = board_before.copy()
     tactical_signals = 0
     if b.is_capture(best_move) or b.gives_check(best_move):
@@ -464,6 +507,8 @@ def classify_error_type(board_before, played_move, best_move, wp_loss):
         tactical_signals += 1
     if tactical_signals >= 1 and wp_loss >= 10:
         return "tactical"
+    if wp_loss >= 25 and pv_is_forcing(board_before, pv):
+        return "deep tactic"
     return "positional"
 
 
@@ -478,29 +523,79 @@ def findability(board_before, best_move):
     return "hard"               # quiet move
 
 
-def depth_to_find(engine, board, best_move, cap=14):
+def depth_to_find(engine, board, best_move, cap=14, restore_threads=None):
     """Honest mode: the shallowest search depth at which the engine's top
-    choice is best_move. Hash is cleared first so the earlier deep search of
-    this same position cannot leak into the shallow ladder. Returns cap + 1
-    if the move is only preferred at the full analysis depth."""
+    choice is best_move and stays best_move for STABLE_RUN consecutive
+    depths.
+
+    Three things this has to get right, all of which are easy to get wrong:
+
+    1. Threads must be 1. Under Lazy SMP, `go depth d` returns when the MAIN
+       thread finishes depth d, while helper threads have been searching
+       deeper in parallel and sharing their results through the transposition
+       table. With Threads > 1, nominal depth stops corresponding to search
+       depth and a "depth 1" probe can be answered with depth-15 knowledge.
+       This is the difference between measuring findability and measuring
+       your CPU's core count.
+    2. The hash must actually be cleared. The deep main-pass analysis of this
+       same position is still in the TT; if the clear fails, the root entry
+       hands the deep best move to the depth-1 probe. A failed clear
+       invalidates the measurement, so it returns None rather than a number.
+    3. Agreement must be stable. First-match semantics record a preference
+       that appears at depth d and vanishes at d + 1.
+
+    Returns:
+      int                  measured depth, MEASUREMENT_FLOOR < d <= cap
+      DEPTH_CENSORED_LOW   stably preferred at or below the floor
+      DEPTH_CENSORED_HIGH  never stably preferred within cap
+      None                 measurement invalid (hash clear failed)
+
+    restore_threads: Threads value to restore afterwards, since the main
+    analysis pass runs multithreaded. Pass the value used in analyze_game.
+    """
+    engine.configure({"Threads": 1})
     try:
         engine.configure({"Clear Hash": None})
-    except Exception:
-        pass
-    for d in range(1, cap + 1):
-        info = engine.analyse(board, chess.engine.Limit(depth=d))
-        pv = info.get("pv")
-        if pv and pv[0] == best_move:
-            return d
-    return cap + 1
+    except chess.engine.EngineError:
+        if restore_threads:
+            engine.configure({"Threads": restore_threads})
+        return None
+
+    try:
+        agree = []
+        for d in range(1, cap + 1):
+            info = engine.analyse(board, chess.engine.Limit(depth=d))
+            pv = info.get("pv")
+            agree.append(bool(pv) and pv[0] == best_move)
+
+        result = DEPTH_CENSORED_HIGH
+        for d in range(1, cap + 1):
+            run = agree[d - 1: min(d - 1 + STABLE_RUN, cap)]
+            if run and all(run):
+                result = d
+                break
+
+        if isinstance(result, int) and result <= MEASUREMENT_FLOOR:
+            return DEPTH_CENSORED_LOW
+        return result
+    finally:
+        if restore_threads:
+            engine.configure({"Threads": restore_threads})
 
 
 def findability_from_depth(d, cap=14):
-    if d <= 5:
+    """Map a possibly-censored depth measurement to a coaching label."""
+    if d is None:
+        return "unmeasured"
+    if d == DEPTH_CENSORED_LOW:
         return "obvious"
+    if d == DEPTH_CENSORED_HIGH:
+        return "beyond analysis depth"
     if d <= 10:
         return "moderate"
-    return "hard"
+    if d <= 20:
+        return "hard"
+    return "outside human range"
 
 
 # ----------------------------------------------------------------------------
@@ -712,7 +807,8 @@ def analyze_game(game_df, depth=14, multipv=3, progress=True,
     game_df = game_df.sort_values("ply")
     moves = []
     engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
-    engine.configure({"Threads": max(1, os.cpu_count() - 1), "Hash": 256})
+    n_threads = max(1, (os.cpu_count() or 2) - 1)
+    engine.configure({"Threads": n_threads, "Hash": 256})
     limit = chess.engine.Limit(depth=depth)
     reporter = MinuteProgress() if progress else None
     try:
@@ -789,9 +885,13 @@ def analyze_game(game_df, depth=14, multipv=3, progress=True,
             if ma.classification in ("inaccuracy", "mistake", "blunder") and info:
                 best_mv = chess.Move.from_uci(ma.best_move_uci)
                 played_mv = chess.Move.from_uci(r.uci)
-                ma.error_type = classify_error_type(board, played_mv, best_mv, ma.wp_loss)
+                ma.error_type = classify_error_type(
+                    board, played_mv, best_mv, ma.wp_loss,
+                    pv=info[0].get("pv"))
                 if findability_mode == "honest":
-                    ma.depth_to_find = depth_to_find(engine, board, best_mv, cap=depth)
+                    ma.depth_to_find = depth_to_find(
+                        engine, board, best_mv, cap=depth,
+                        restore_threads=n_threads)
                     ma.findable = findability_from_depth(ma.depth_to_find, cap=depth)
                 else:
                     ma.findable = findability(board, best_mv)
@@ -835,7 +935,8 @@ def phase_of(ply):
     return "endgame"
 
 
-def build_report(meta, moves, opening, player_color, graph_path=None):
+def build_report(meta, moves, opening, player_color, graph_path=None,
+                 analysis_params=None):
     eco, name, book_ply, deviation_ply = opening
     lines = []
     L = lines.append
@@ -986,24 +1087,38 @@ def coach_paragraph(m, player_color):
     if m.error_type == "tactical":
         parts.append("Before committing to a quiet move here, the checklist is "
                      "checks, captures, threats, in that order.")
+    elif m.error_type == "deep tactic":
+        parts.append("Nothing was hanging and no capture was on offer, but the "
+                     "engine's continuation is forcing: this was a combination "
+                     "landing several moves out, not a judgment error.")
     elif m.error_type == "positional":
         parts.append("This was a judgment error rather than a missed tactic; "
                      "compare the pawn structure and piece activity after both moves.")
     if m.depth_to_find is not None:
-        if m.findable == "obvious":
+        if m.depth_to_find == DEPTH_CENSORED_LOW:
             forcing = ("a forcing move, the kind a checks-and-captures scan "
-                       "catches" if m.error_type == "tactical"
+                       "catches" if m.error_type in ("tactical", "deep tactic")
                        else "a quiet move, but one whose point shows at a glance")
-            parts.append(f"The engine prefers this move from search depth "
-                         f"{m.depth_to_find}; it sits near the surface, {forcing}.")
+            parts.append(f"The engine prefers this move from at or below depth "
+                         f"{MEASUREMENT_FLOOR}, which is as shallow as this "
+                         f"measurement resolves; it sits near the surface, {forcing}.")
+        elif m.depth_to_find == DEPTH_CENSORED_HIGH:
+            parts.append("The engine never settles on this move within the "
+                         "analysis depth, so how findable it was is not "
+                         "measured here; weigh this one lightly.")
         elif m.findable == "moderate":
             parts.append(f"The engine first prefers this move at depth "
-                         f"{m.depth_to_find}; findable, but it takes a "
-                         "deliberate look rather than a scan.")
+                         f"{m.depth_to_find} and holds it; findable, but it "
+                         "takes a deliberate look rather than a scan.")
+        elif m.findable == "hard":
+            parts.append(f"The engine does not settle on this move until depth "
+                         f"{m.depth_to_find}; reachable with real calculation, "
+                         "but not on a scan.")
         else:
-            parts.append(f"The engine does not prefer this move until depth "
-                         f"{m.depth_to_find}; missing it is forgivable, so "
-                         "weigh this one lightly.")
+            parts.append(f"The engine does not settle on this move until depth "
+                         f"{m.depth_to_find}, which is outside what a human "
+                         "reasonably calculates over the board; this is not a "
+                         "training target.")
     elif m.findable == "obvious":
         parts.append("The better move was a forcing move, the kind a "
                      "checks-and-captures scan catches.")
@@ -1080,8 +1195,11 @@ def main():
     ap.add_argument("--findability", choices=["heuristic", "honest"],
                     default="heuristic",
                     help="heuristic: cheap move-shape buckets. honest: measure "
-                         "the shallowest depth at which the engine prefers the "
-                         "best move (adds a shallow search ladder per error)")
+                         "the shallowest depth at which the engine stably "
+                         "prefers the best move, single-threaded with a cleared "
+                         "hash (adds a search ladder per error; results at or "
+                         f"below depth {MEASUREMENT_FLOOR} are reported as "
+                         "censored rather than as a number)")
     ap.add_argument("--out", default="report.md")
     ap.add_argument("--graph", default="eval_graph.png")
     ap.add_argument("--perspective", choices=["white", "black", "both"],
@@ -1129,6 +1247,13 @@ def main():
 
     moves = analyze_game(gdf, depth=args.depth, multipv=args.multipv,
                          findability_mode=args.findability)
+    analysis_params = {
+        "depth": args.depth,
+        "multipv": args.multipv,
+        "findability": args.findability,
+        "engine": os.path.basename(STOCKFISH_PATH),
+        "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
     book = load_opening_book(args.openings_dir)
     opening = identify_opening(moves, book)
     colors = ["white", "black"] if args.perspective == "both" else [args.perspective]
@@ -1146,7 +1271,8 @@ def main():
         make_graph(moves, graph_path, color)
     
         report = build_report(
-            meta, moves, opening, color, graph_path=graph_path
+            meta, moves, opening, color, graph_path=graph_path,
+            analysis_params=analysis_params
         )
         with open(out_path, "w") as f:
             f.write(report)
