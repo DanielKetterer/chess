@@ -20,16 +20,25 @@ DEPTH_LABELS = [
 ]
 
 ERROR_HEADING_RE = re.compile(
-    r"^###\s+(?P<label>(?P<move_number>\d+)\.{1,3}[^\(]+)\s+"
-    r"\((?P<classification>[^,]+),\s*(?P<error_type>[^,]+),\s*"
-    r"wp loss\s+(?P<wp_loss>[\d.]+)%\)",
-    re.MULTILINE,
+    r"^###\s+(?P<label>(?P<move_number>\d+)\.{1,3}[^\n(:]+?)\s*"
+    r"(?:\(|:|[-–—])\s*"
+    r"(?P<classification>inaccuracy|mistake|blunder)\s*[,;|/ -]+\s*"
+    r"(?P<error_type>tactical|positional|unclear)\s*[,;|/ -]+\s*"
+    r"(?:wp|win[- ]probability)\s*loss\s*:?\s*(?P<wp_loss>[\d.]+)\s*(?:%|pp|points?)?",
+    re.IGNORECASE | re.MULTILINE,
 )
 DEPTH_RE = re.compile(
-    r"engine (?:first prefers|prefers|does not prefer) this move "
-    r"(?:from |at |until )?(?:search )?depth\s+(\d+)",
+    r"(?:engine (?:first prefers|prefers|does not prefer) this move "
+    r"(?:from |at |until )?(?:search )?depth|depth(?: to preference| engine prefers another)?\s*:?)"
+    r"\s*(\d+)",
     re.IGNORECASE,
 )
+ERRORS_SECTION_RE = re.compile(
+    r"^##\s+Your errors, move by move\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+NEXT_SECTION_RE = re.compile(r"^##\s+", re.MULTILINE)
+GAME_ID_RE = re.compile(r"^Game ID:\s*(\S+)", re.MULTILINE)
 GAME_RE = re.compile(r"^Game:\s*(\S+)", re.MULTILINE)
 DATE_RE = re.compile(r"^Date:\s*([^|\n]+)", re.MULTILINE)
 TITLE_RE = re.compile(r"^#.*Game analysis:\s*(?P<white>.+?)\s+vs\s+(?P<black>.+?)\s*$", re.MULTILINE)
@@ -51,7 +60,7 @@ class ErrorRow:
 
 
 def game_id_from_text(text, path):
-    match = GAME_RE.search(text)
+    match = GAME_ID_RE.search(text) or GAME_RE.search(text)
     if match:
         return match.group(1).rstrip("/").rsplit("/", 1)[-1]
     stem = path.stem
@@ -84,6 +93,16 @@ def report_is_for_username(text, username):
     return report_user == username.strip().casefold()
 
 
+def player_error_text(text):
+    """Return only the player's error section, excluding critical/full tables."""
+    section = ERRORS_SECTION_RE.search(text)
+    if not section:
+        return text
+    next_section = NEXT_SECTION_RE.search(text, section.end())
+    end = next_section.start() if next_section else len(text)
+    return text[section.end():end]
+
+
 def parse_report(path, username):
     text = path.read_text(encoding="utf-8")
     if not report_is_for_username(text, username):
@@ -95,11 +114,12 @@ def parse_report(path, username):
         f"{title.group('white').strip()} vs {title.group('black').strip()}"
         if title else game_id
     )
+    error_text = player_error_text(text)
     rows = []
-    matches = list(ERROR_HEADING_RE.finditer(text))
+    matches = list(ERROR_HEADING_RE.finditer(error_text))
     for idx, match in enumerate(matches):
-        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
-        section = text[match.end():end]
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(error_text)
+        section = error_text[match.start():end]
         depth_match = DEPTH_RE.search(section)
         if not depth_match:
             continue
@@ -110,8 +130,8 @@ def parse_report(path, username):
             "report_path": str(path),
             "move_label": match.group("label").strip(),
             "move_number": int(match.group("move_number")),
-            "classification": match.group("classification").strip(),
-            "error_type": match.group("error_type").strip(),
+            "classification": match.group("classification").strip().casefold(),
+            "error_type": match.group("error_type").strip().casefold(),
             "wp_loss": float(match.group("wp_loss")),
             "depth": int(depth_match.group(1)),
         })
