@@ -79,14 +79,14 @@ jobs:
           DEPTH: ${{ inputs.depth }}
           FINDABILITY: ${{ inputs.findability }}
         run: |
-          mkdir -p reports
+          mkdir -p reports analysis-output
           args=(
             --username "$USERNAME"
             --depth "$DEPTH"
             --findability "$FINDABILITY"
             --perspective both
-            --out reportLatest.md
-            --graph reportLatest.png
+            --out analysis-output/report.md
+            --graph analysis-output/report.png
           )
 
           if [ -n "$GAME_ID" ]; then
@@ -95,18 +95,18 @@ jobs:
 
           python chess_analyzer.py "${args[@]}"
 
-          game_url=$(sed -n 's/^Game: //p' reportLatest_white.md | head -n 1)
+          game_url=$(sed -n 's/^Game: //p' analysis-output/report_white.md | head -n 1)
           analyzed_game_id=${game_url%/}
           analyzed_game_id=${analyzed_game_id##*/}
-          game_time=$(sed -n 's/^Game end time UTC: //p' reportLatest_white.md | head -n 1)
-          game_date=$(sed -n 's/^Date: *//p' reportLatest_white.md | head -n 1 | cut -d '|' -f 1 | xargs)
+          game_time=$(sed -n 's/^Game end time UTC: //p' analysis-output/report_white.md | head -n 1)
+          game_date=$(sed -n 's/^Date: *//p' analysis-output/report_white.md | head -n 1 | cut -d '|' -f 1 | xargs)
           timestamp=$(date -u -d "${game_time:-${game_date:-now}}" +%Y%m%dT%H%M%SZ 2>/dev/null || date -u +%Y%m%dT%H%M%SZ)
           base="reports/${analyzed_game_id}_${timestamp}"
 
-          mv reportLatest_white.md "${base}_white.md"
-          mv reportLatest_black.md "${base}_black.md"
-          mv reportLatest_white.png "${base}_white.png"
-          mv reportLatest_black.png "${base}_black.png"
+          mv analysis-output/report_white.md "${base}_white.md"
+          mv analysis-output/report_black.md "${base}_black.md"
+          mv analysis-output/report_white.png "${base}_white.png"
+          mv analysis-output/report_black.png "${base}_black.png"
 
       - name: Commit reports to repository
         env:
@@ -114,6 +114,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf analysis-output
 
           git add -f reports/
 
