@@ -618,7 +618,13 @@ def classify_sacrifice(board_before, best_move, pv, color):
     See the SAC_ constants for why that distinction is doing the work.
     """
     profile = material_profile(board_before, pv, color)
-    if profile["plies"] < SAC_MIN_PV_PLIES:
+    # A short PV normally cannot show whether material returns, so it is not
+    # judgeable either way. The exception is a line that mates: mate is the
+    # strongest possible compensation, and a forced mate in two produces a
+    # three-ply PV that would otherwise be discarded. Byrne-Fischer's queen
+    # sac resolves slowly and needs the length gate; Morphy's resolves in
+    # mate and must be exempt from it.
+    if profile["plies"] < SAC_MIN_PV_PLIES and not profile["mates"]:
         return None
     trough = profile["trough"]
     if trough > -SAC_EXCHANGE_TROUGH:
