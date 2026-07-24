@@ -1549,7 +1549,7 @@ def build_report(meta, moves, opening, player_color, graph_path=None,
             ends = ("mate" if sac["mates"]
                     else f"{sac['final_pawns']:+.1f} pawns")
             verdict = sac.get("rejected") or "puzzle"
-            L(f"| {m.move_label} | {sac['trough_pawns']:.1f} ({sac['size']}) "
+            L(f"| {m.move_number} | {sac['trough_pawns']:.1f} ({sac['size']}) "
               f"| {sac['kind']} | {'yes' if sac['quiet'] else 'no'} "
               f"| {ends} | {verdict} |")
         L("")
