@@ -122,14 +122,15 @@ that per-100-moves series over time.
 
 ## GitHub Action puzzle tools
 
-The `Puzzle tools` workflow can be started manually with `workflow_dispatch`.
-It supports:
+Puzzle creation is wired into the normal `Analyze Chess Game` and `Analyze Daily
+Chess Games` workflows. Those workflows already pay the Stockfish cost, so they
+pass `--puzzles-file puzzles.json`, commit the updated puzzle file, and keep the
+JSON sidecars alongside the Markdown reports for later trend reporting.
 
-- `generate-any`: analyze the latest Chess.com game, or a supplied `game_id`, at
-  the selected depth (default `24`) and append eligible puzzles.
-- `generate-unprocessed`: analyze the latest Chess.com game at depth `24` by
-  default; the puzzle file deduplicates already-seen FENs.
+The separate `Puzzle utilities` workflow is intentionally lightweight and does
+not run Stockfish. It supports:
+
 - `list`: run `scripts/render_puzzle_md.py` to render a chessboard and stored
   prompt to `puzzle.md`.
 - `complete`: run `scripts/mark_puzzle_attempt.py` to append a completion
-  attempt and mark the puzzle complete.
+  attempt, mark the puzzle complete, and commit the updated puzzle file.
