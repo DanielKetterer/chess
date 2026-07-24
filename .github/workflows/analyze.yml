@@ -107,6 +107,7 @@ jobs:
             --perspective both
             --out analysis-output/report.md
             --graph analysis-output/report.png
+            --puzzles-file puzzles.json
           )
 
           if [ -n "$GAME_ID" ]; then
@@ -127,6 +128,8 @@ jobs:
           mv analysis-output/report_black.md "${base}_black.md"
           mv analysis-output/report_white.png "${base}_white.png"
           mv analysis-output/report_black.png "${base}_black.png"
+          mv analysis-output/report_white.json "${base}_white.json"
+          mv analysis-output/report_black.json "${base}_black.json"
 
       - name: Commit reports to repository
         env:
@@ -136,7 +139,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -rf analysis-output
 
-          git add -f reports/
+          git add -f reports/ puzzles.json
 
           if git diff --cached --quiet; then
             echo "Reports have not changed."

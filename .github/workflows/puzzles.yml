@@ -1,0 +1,73 @@
+name: Puzzle utilities
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: list or complete
+        required: true
+        default: list
+        type: choice
+        options: [list, complete]
+      puzzles_file:
+        description: Puzzle JSON path
+        required: false
+        default: puzzles.json
+      puzzle_selector:
+        description: Optional puzzle index/FEN for list mode
+        required: false
+      fen:
+        description: Puzzle FEN for complete mode
+        required: false
+      attempted_move:
+        description: Optional attempted move for complete mode
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  puzzle-utilities:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run selected puzzle utility
+        run: |
+          set -euo pipefail
+          case "${{ inputs.mode }}" in
+            list)
+              extra=()
+              if [ -n "${{ inputs.puzzle_selector }}" ]; then extra=(--selector "${{ inputs.puzzle_selector }}"); fi
+              python scripts/render_puzzle_md.py --puzzles-file "${{ inputs.puzzles_file }}" "${extra[@]}" --out puzzle.md
+              cat puzzle.md
+              ;;
+            complete)
+              test -n "${{ inputs.fen }}"
+              python scripts/mark_puzzle_attempt.py --puzzles-file "${{ inputs.puzzles_file }}" --fen "${{ inputs.fen }}" --move "${{ inputs.attempted_move }}" --result completed
+              ;;
+          esac
+      - name: Commit puzzle updates
+        if: ${{ inputs.mode == 'complete' }}
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${{ inputs.puzzles_file }}"
+          if git diff --cached --quiet; then
+            echo "Puzzle file has not changed."
+            exit 0
+          fi
+          git commit -m "Mark chess puzzle completed"
+          git pull --rebase -X theirs origin "$BRANCH_NAME"
+          git push origin "HEAD:$BRANCH_NAME"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: puzzle-output
+          path: puzzle.md
+          if-no-files-found: ignore

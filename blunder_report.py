@@ -95,6 +95,7 @@ class ErrorRow:
     refute_depth: object = UNMEASURED
     seconds_spent: object = None
     pre_error_bucket: str = ""
+    error_category: str = ""
 
 
 @dataclass
@@ -103,6 +104,7 @@ class GameRecord:
     game_date: str
     report_path: str
     rows: list = field(default_factory=list)
+    metrics: dict = field(default_factory=dict)
 
 
 def parse_provenance(text):
@@ -261,12 +263,14 @@ def parse_sidecar(path, username):
             "move_number": e["move_number"],
             "classification": e["classification"],
             "error_type": e["error_type"],
+            "error_category": e.get("error_category", e.get("error_type", "")),
             "wp_loss": float(e["wp_loss"]),
             "depth": UNMEASURED if e.get("depth_to_find") is None else e.get("depth_to_find"),
             "refute_depth": UNMEASURED if e.get("refute_depth") is None else e.get("refute_depth"),
             "seconds_spent": e.get("seconds_spent"),
             "pre_error_bucket": e.get("pre_error_bucket", ""),
         })
+    rec.metrics = data.get("metrics", {}) or {}
     rec.provenance = data.get("analysis", {})
     return rec
 
@@ -331,7 +335,7 @@ def rolling(values, window=10):
 # Rendering
 # ---------------------------------------------------------------------------
 
-def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=0):
+def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=0, attention_rates=None):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -359,7 +363,7 @@ def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=0):
     # Reserve the right margin explicitly. bbox_inches="tight" does not
     # reliably include legends anchored outside the axes, which is why the
     # depth legend was rendering clipped.
-    gs = fig.add_gridspec(4, 1, height_ratios=[3, 1, 1, 1], hspace=0.42,
+    gs = fig.add_gridspec(5, 1, height_ratios=[3, 1, 1, 1, 1], hspace=0.48,
                           left=0.07, right=0.76, top=0.93, bottom=0.07)
     ax = fig.add_subplot(gs[0])
 
@@ -435,7 +439,15 @@ def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=0):
     ax3.set_title("move number of first blunder, 10-game rolling mean in blue",
                   fontsize=9, loc="left")
 
-    ax4 = fig.add_subplot(gs[3])
+    ax_att = fig.add_subplot(gs[3], sharex=ax)
+    rates = attention_rates or [0.0] * n_games
+    ax_att.bar(x, rates, color="#f0c987", width=0.85, zorder=2)
+    ax_att.plot(x, rolling(rates), color="#b56576", lw=2.2, zorder=3)
+    ax_att.set_ylabel("attention /\n100 moves", fontsize=9)
+    ax_att.grid(alpha=0.18, zorder=0)
+    ax_att.set_title("attention errors per 100 moves, 10-game rolling mean in red", fontsize=9, loc="left")
+
+    ax4 = fig.add_subplot(gs[4])
     timed = [r for r in rows if r.seconds_spent not in (None, "")]
     if timed:
         ax4.scatter([float(r.seconds_spent) for r in timed], [r.wp_loss for r in timed],
@@ -476,12 +488,12 @@ def write_markdown(rows, n_games, path, image_path, floor, cap, provenance):
     if image_path:
         lines.extend([f"![Blunder scatter]({os.path.basename(image_path)})", ""])
     lines.extend([
-        "| Game # | Game ID | Date | Move | Class | Type | WP loss | Depth | Refute | Seconds | Pre-error | Report |",
+        "| Game # | Game ID | Date | Move | Class | Category | WP loss | Depth | Refute | Seconds | Pre-error | Report |",
         "|---:|---|---|---|---|---|---:|---|---|---:|---|---|"])
     for row in rows:
         lines.append(
             f"| {row.game_index} | {row.game_id} | {row.game_date} | "
-            f"{row.move_label} | {row.classification} | {row.error_type} | "
+            f"{row.move_label} | {row.classification} | {row.error_category or row.error_type} | "
             f"{row.wp_loss:.1f} | {row.depth} | {row.refute_depth} | "
             f"{'' if row.seconds_spent is None else row.seconds_spent} | "
             f"{row.pre_error_bucket} | {row.report_path} |")
@@ -548,8 +560,15 @@ def main():
     cap = args.cap if args.cap is not None else int(
         prov.get("depth", DEFAULT_CAP))
 
+    attention_rates = [0.0] * n_games
     rows = []
     for rec in records:
+        idx = game_order[rec.game_id]
+        if rec.metrics:
+            attention_rates[idx] = float(rec.metrics.get("attention_errors_per_100_moves", 0.0) or 0.0)
+        else:
+            player_moves = max(1, len(rec.rows))
+            attention_rates[idx] = 100 * sum(1 for row in rec.rows if row.get("error_category") == "attention") / player_moves
         for r in rec.rows:
             rows.append(ErrorRow(
                 game_index=game_order[rec.game_id],
@@ -568,7 +587,7 @@ def main():
     if rows:
         try:
             render_scatter(rows, n_games, args.graph, floor, cap, prov,
-                           min_games=args.min_games_axis)
+                           min_games=args.min_games_axis, attention_rates=attention_rates)
         except ImportError as exc:
             print(f"Could not render scatter plot: {exc}")
             image_path = ""
