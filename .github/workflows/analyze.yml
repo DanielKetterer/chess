@@ -18,7 +18,7 @@ on:
       depth:
         description: Stockfish analysis depth
         required: true
-        default: "10"
+        default: "24"
         type: choice
         options:
           - "10"
