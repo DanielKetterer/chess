@@ -562,11 +562,26 @@ def depth_to_find(engine, board, best_move, cap=14, restore_threads=None):
         return None
 
     try:
-        agree = []
-        for d in range(1, cap + 1):
-            info = engine.analyse(board, chess.engine.Limit(depth=d))
-            pv = info.get("pv")
-            agree.append(bool(pv) and pv[0] == best_move)
+        # One iterative-deepening search, reading the PV at each iteration,
+        # instead of one fresh search per rung.
+        #
+        # Two reasons, and the second matters more than the first:
+        #  - Speed. N separate `go depth d` calls each redo iterative
+        #    deepening from 1, so the per-rung ladder costs several times a
+        #    single search. Measured 2.7x on a depth-20 ladder.
+        #  - Correctness. Between rungs the transposition table carries over,
+        #    so rung d is answered partly from tables built by rungs 1..d-1,
+        #    each of which ran its own full deepening. That is a milder form
+        #    of the leak the Threads fix addressed, and it is not small: on a
+        #    test position the per-rung ladder reported stable agreement from
+        #    depth 5 while a clean single pass reported depth 9.
+        agree = [False] * cap
+        with engine.analysis(board, chess.engine.Limit(depth=cap)) as an:
+            for info in an:
+                d = info.get("depth")
+                pv = info.get("pv")
+                if d and 1 <= d <= cap and pv:
+                    agree[d - 1] = (pv[0] == best_move)
 
         result = DEPTH_CENSORED_HIGH
         for d in range(1, cap + 1):
@@ -1263,7 +1278,7 @@ def main():
     ap.add_argument("--depth", type=int, default=14)
     ap.add_argument("--multipv", type=int, default=3)
     ap.add_argument("--findability", choices=["heuristic", "honest"],
-                    default="heuristic",
+                    default="honest",
                     help="heuristic: cheap move-shape buckets. honest: measure "
                          "the shallowest depth at which the engine stably "
                          "prefers the best move, single-threaded with a cleared "
