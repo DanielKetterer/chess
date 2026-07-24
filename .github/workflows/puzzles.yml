@@ -4,18 +4,27 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: list or complete
+        description: list, render, or complete
         required: true
         default: list
         type: choice
-        options: [list, complete]
+        options: [list, render, complete]
       puzzles_file:
         description: Puzzle JSON path
         required: false
         default: puzzles.json
       puzzle_selector:
-        description: Optional puzzle index/FEN for list mode
+        description: Optional puzzle ID or FEN for list/render mode
         required: false
+      render_all_unrendered:
+        description: Render every puzzle without an existing Markdown card
+        required: false
+        default: false
+        type: boolean
+      render_dir:
+        description: Directory for committed rendered puzzle cards
+        required: false
+        default: rendered-puzzles
       fen:
         description: Puzzle FEN for complete mode
         required: false
@@ -36,38 +45,106 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install python-chess
       - name: Run selected puzzle utility
+        env:
+          MODE: ${{ inputs.mode }}
+          PUZZLES_FILE: ${{ inputs.puzzles_file }}
+          PUZZLE_SELECTOR: ${{ inputs.puzzle_selector }}
+          FEN: ${{ inputs.fen }}
+          ATTEMPTED_MOVE: ${{ inputs.attempted_move }}
+          RENDER_ALL_UNRENDERED: ${{ inputs.render_all_unrendered }}
+          RENDER_DIR: ${{ inputs.render_dir }}
         run: |
           set -euo pipefail
-          case "${{ inputs.mode }}" in
+          case "$MODE" in
             list)
               extra=()
-              if [ -n "${{ inputs.puzzle_selector }}" ]; then extra=(--selector "${{ inputs.puzzle_selector }}"); fi
-              python scripts/render_puzzle_md.py --puzzles-file "${{ inputs.puzzles_file }}" "${extra[@]}" --out puzzle.md
+              if [ -n "$PUZZLE_SELECTOR" ]; then extra=(--selector "$PUZZLE_SELECTOR"); fi
+              python scripts/render_puzzle_md.py --puzzles-file "$PUZZLES_FILE" "${extra[@]}" --out puzzle.md
               cat puzzle.md
               ;;
+            render)
+              mkdir -p "$RENDER_DIR"
+              if [ "$RENDER_ALL_UNRENDERED" = "true" ]; then
+                mapfile -t selectors < <(python - <<'PY'
+          import os
+          from pathlib import Path
+          from scripts.render_puzzle_md import load_puzzles, puzzle_id
+
+          puzzles = load_puzzles(Path.cwd() / os.environ["PUZZLES_FILE"])
+          out_dir = Path(os.environ["RENDER_DIR"])
+          for puzzle in puzzles:
+              pid = puzzle_id(puzzle)
+              if not (out_dir / f"{pid}.md").exists():
+                  print(pid)
+          PY
+                )
+                if [ "${#selectors[@]}" -eq 0 ]; then
+                  echo "All puzzles already have rendered Markdown cards in $RENDER_DIR."
+                  exit 0
+                fi
+              else
+                test -n "$PUZZLE_SELECTOR"
+                mapfile -t selectors < <(python - <<'PY'
+          import os
+          from pathlib import Path
+          from scripts.render_puzzle_md import load_puzzles, original_fen, puzzle_id
+
+          selector = os.environ["PUZZLE_SELECTOR"]
+          for puzzle in load_puzzles(Path.cwd() / os.environ["PUZZLES_FILE"]):
+              if selector in (puzzle_id(puzzle), puzzle.get("id"), original_fen(puzzle)):
+                  print(puzzle_id(puzzle))
+                  break
+          else:
+              raise SystemExit(f"No puzzle matched selector {selector!r}")
+          PY
+                )
+              fi
+
+              for selector in "${selectors[@]}"; do
+                python scripts/render_puzzle_md.py \
+                  --puzzles-file "$PUZZLES_FILE" \
+                  --selector "$selector" \
+                  --any \
+                  --out "$RENDER_DIR/$selector.md"
+              done
+              ;;
             complete)
-              test -n "${{ inputs.fen }}"
-              python scripts/mark_puzzle_attempt.py --puzzles-file "${{ inputs.puzzles_file }}" --fen "${{ inputs.fen }}" --move "${{ inputs.attempted_move }}" --result completed
+              test -n "$FEN"
+              python scripts/mark_puzzle_attempt.py --puzzles-file "$PUZZLES_FILE" --fen "$FEN" --move "$ATTEMPTED_MOVE" --result completed
               ;;
           esac
       - name: Commit puzzle updates
-        if: ${{ inputs.mode == 'complete' }}
+        if: ${{ inputs.mode == 'complete' || inputs.mode == 'render' }}
         env:
           BRANCH_NAME: ${{ github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "${{ inputs.puzzles_file }}"
+          if [ "${{ inputs.mode }}" = "complete" ]; then
+            git add "${{ inputs.puzzles_file }}"
+          else
+            git add "${{ inputs.render_dir }}"
+          fi
           if git diff --cached --quiet; then
             echo "Puzzle file has not changed."
             exit 0
           fi
-          git commit -m "Mark chess puzzle completed"
+          if [ "${{ inputs.mode }}" = "complete" ]; then
+            git commit -m "Mark chess puzzle completed"
+          else
+            git commit -m "Render chess puzzle cards"
+          fi
           git pull --rebase -X theirs origin "$BRANCH_NAME"
           git push origin "HEAD:$BRANCH_NAME"
       - uses: actions/upload-artifact@v4
         with:
           name: puzzle-output
-          path: puzzle.md
+          path: |
+            puzzle.md
+            ${{ inputs.render_dir }}/
           if-no-files-found: ignore
