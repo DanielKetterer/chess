@@ -64,3 +64,15 @@ game_index,game_id,game_date,report_path,move_label,move_number,classification,e
 8,6b5508ea-86ea-11f1-8817-a0dc1301000f,2026.07.23,reports/2026/07/23/171987878016_20260723T233059Z_white.md,23.Qh1,23,blunder,tactical,40.85,<=floor,8,70.4,balanced,allowed_tactic
 8,6b5508ea-86ea-11f1-8817-a0dc1301000f,2026.07.23,reports/2026/07/23/171987878016_20260723T233059Z_white.md,29.Kb3,29,mistake,positional,13.35,<=floor,2,11.6,winning,attention
 8,6b5508ea-86ea-11f1-8817-a0dc1301000f,2026.07.23,reports/2026/07/23/171987878016_20260723T233059Z_white.md,30.Qf1,30,blunder,tactical,71.89,<=floor,6,95.0,winning,missed_tactic
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,5...Bxc3,5,mistake,tactical,16.95,<=floor,2,34.6,balanced,attention
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,8...Kf8,8,inaccuracy,positional,9.3,<=floor,1,16.5,losing,attention
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,10...Qf2,10,inaccuracy,positional,6.26,>cap,6,99.1,losing,opening
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,14...Kf7,14,mistake,positional,10.74,24,7,39.5,balanced,allowed_tactic
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,17...b6,17,inaccuracy,positional,9.1,<=floor,4,0.6,balanced,positional
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,18...Rf8,18,inaccuracy,positional,6.4,<=floor,3,3.4,balanced,positional
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,19...g5,19,inaccuracy,positional,8.86,<=floor,2,36.2,balanced,attention
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,20...Rxf1,20,inaccuracy,positional,7.87,<=floor,1,0.6,balanced,attention
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,21...d6,21,mistake,positional,15.29,<=floor,4,0.6,losing,allowed_tactic
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,26...Kf5,26,blunder,tactical,30.73,7,9,3.3,balanced,positional
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,27...Ke4,27,blunder,positional,25.95,9,>18,5.5,balanced,positional
+9,c435548d-87ac-11f1-8391-941ec601000f,2026.07.24,reports/2026/07/24/172032754886_20260724T223108Z_black.md,28...Kd4,28,mistake,tactical,17.67,<=floor,16,4.5,losing,missed_tactic

@@ -1,6 +1,6 @@
 # Blunder Report
 
-REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  9 games  |  65 errors  |  latest run 2026-07-25T14:03:35Z
+REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  10 games  |  77 errors  |  latest run 2026-07-25T14:26:30Z
 
 Depth column: an integer is a measured depth. `<=floor` means the engine stably preferred the move at or below depth 6, which is as shallow as this measurement resolves. `>cap` means it never settled within depth 24. `unmeasured` means the measurement was invalid and the row is kept but not binned.
 
@@ -73,3 +73,15 @@ Depth column: an integer is a measured depth. `<=floor` means the engine stably 
 | 8 | 6b5508ea-86ea-11f1-8817-a0dc1301000f | 2026.07.23 | 23.Qh1 | blunder | allowed_tactic | 40.9 | <=floor | 8 | 70.4 | balanced | [171987878016_20260723T233059Z_white.md](reports/2026/07/23/171987878016_20260723T233059Z_white.md) |
 | 8 | 6b5508ea-86ea-11f1-8817-a0dc1301000f | 2026.07.23 | 29.Kb3 | mistake | attention | 13.3 | <=floor | 2 | 11.6 | winning | [171987878016_20260723T233059Z_white.md](reports/2026/07/23/171987878016_20260723T233059Z_white.md) |
 | 8 | 6b5508ea-86ea-11f1-8817-a0dc1301000f | 2026.07.23 | 30.Qf1 | blunder | missed_tactic | 71.9 | <=floor | 6 | 95.0 | winning | [171987878016_20260723T233059Z_white.md](reports/2026/07/23/171987878016_20260723T233059Z_white.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 5...Bxc3 | mistake | attention | 16.9 | <=floor | 2 | 34.6 | balanced | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 8...Kf8 | inaccuracy | attention | 9.3 | <=floor | 1 | 16.5 | losing | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 10...Qf2 | inaccuracy | opening | 6.3 | >cap | 6 | 99.1 | losing | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 14...Kf7 | mistake | allowed_tactic | 10.7 | 24 | 7 | 39.5 | balanced | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 17...b6 | inaccuracy | positional | 9.1 | <=floor | 4 | 0.6 | balanced | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 18...Rf8 | inaccuracy | positional | 6.4 | <=floor | 3 | 3.4 | balanced | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 19...g5 | inaccuracy | attention | 8.9 | <=floor | 2 | 36.2 | balanced | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 20...Rxf1 | inaccuracy | attention | 7.9 | <=floor | 1 | 0.6 | balanced | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 21...d6 | mistake | allowed_tactic | 15.3 | <=floor | 4 | 0.6 | losing | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 26...Kf5 | blunder | positional | 30.7 | 7 | 9 | 3.3 | balanced | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 27...Ke4 | blunder | positional | 25.9 | 9 | >18 | 5.5 | balanced | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
+| 9 | c435548d-87ac-11f1-8391-941ec601000f | 2026.07.24 | 28...Kd4 | mistake | missed_tactic | 17.7 | <=floor | 16 | 4.5 | losing | [172032754886_20260724T223108Z_black.md](reports/2026/07/24/172032754886_20260724T223108Z_black.md) |
