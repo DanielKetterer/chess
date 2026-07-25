@@ -1,0 +1,173 @@
+{
+  "schema_version": 2,
+  "game_id": "a9f7a99c-83dc-11f1-b9ec-2f831301000f",
+  "game_date": "2026.07.20",
+  "game_url": "https://www.chess.com/game/live/171808415550",
+  "white": "newchessplr",
+  "black": "DanielKetterer",
+  "time_class": "rapid",
+  "player_color": "black",
+  "analysis": {
+    "depth": 24,
+    "multipv": 3,
+    "findability": "honest",
+    "measurement_floor": 6,
+    "stable_run": 3,
+    "refute_threshold_rule": {
+      "floor_wp": 5.0,
+      "fraction_of_wp_loss": 0.6
+    },
+    "refute_depth_cap": 18,
+    "sacrifice_gates": {
+      "exchange_trough_pawns": 1.5,
+      "piece_trough_pawns": 3.0,
+      "recovery_tolerance_pawns": 0.5,
+      "min_pv_plies": 6,
+      "pre_eval_band_cp": [
+        -200,
+        300
+      ],
+      "min_ply": 21
+    },
+    "attention_requires": {
+      "refute_depth_max": 2,
+      "findable": "obvious"
+    },
+    "puzzle_gates": {
+      "categories": [
+        "brilliant_sacrifice",
+        "missed_tactic",
+        "allowed_tactic",
+        "endgame"
+      ],
+      "refute_min": 3,
+      "refute_max": 8,
+      "wp_gap_min": 5.0
+    },
+    "censored_low": "<=floor",
+    "censored_high": ">cap",
+    "engine": "stockfish",
+    "engine_id": "Stockfish 18",
+    "threads": 1,
+    "hash_mb": 256,
+    "deterministic": true,
+    "generated_utc": "2026-07-25T16:54:00Z"
+  },
+  "puzzle_gate_tally": {
+    "wp_gap_too_small": 1,
+    "category:attention": 1,
+    "refute_too_shallow": 1
+  },
+  "metrics": {
+    "player_moves": 15,
+    "attention_errors": 1,
+    "attention_errors_per_100_moves": 6.67
+  },
+  "errors": [
+    {
+      "ply": 24,
+      "move_number": 12,
+      "color": "black",
+      "san": "Bc5",
+      "move_label": "12...Bc5",
+      "classification": "mistake",
+      "error_type": "positional",
+      "error_category": "allowed_tactic",
+      "wp_loss": 16.07,
+      "cp_loss": 186,
+      "depth_to_find": "<=floor",
+      "refute_depth": 7,
+      "refute_threshold_wp": 9.64,
+      "refutation": "c1e3",
+      "sacrifice": {
+        "trough_pawns": -5,
+        "final_pawns": 2,
+        "trough_ply": 21,
+        "pv_plies": 31,
+        "size": "piece",
+        "quiet": true,
+        "mates": false,
+        "recovered": true,
+        "kind": "sham",
+        "desperado": false,
+        "rejected": "obvious"
+      },
+      "puzzle_reject": "wp_gap_too_small",
+      "findable": "obvious",
+      "seconds_spent": 17.6,
+      "pre_error_eval": "+0.35",
+      "pre_error_bucket": "balanced",
+      "fen_before": "4rbnr/p1pk1ppp/8/8/3p4/2N5/PPP2PPP/R1BR2K1 b - - 1 12",
+      "uci": "f8c5",
+      "best_move_san": "c5",
+      "best_move_uci": "c7c5",
+      "best_second_wp_gap": 1.65
+    },
+    {
+      "ply": 26,
+      "move_number": 13,
+      "color": "black",
+      "san": "d3",
+      "move_label": "13...d3",
+      "classification": "blunder",
+      "error_type": "tactical",
+      "error_category": "attention",
+      "wp_loss": 20.83,
+      "cp_loss": 341,
+      "depth_to_find": "<=floor",
+      "refute_depth": 1,
+      "refute_threshold_wp": 12.5,
+      "refutation": null,
+      "sacrifice": {
+        "trough_pawns": -6,
+        "final_pawns": 0,
+        "trough_ply": 21,
+        "pv_plies": 25,
+        "size": "piece",
+        "quiet": true,
+        "mates": false,
+        "recovered": true,
+        "kind": "sham",
+        "desperado": true,
+        "rejected": "desperado"
+      },
+      "puzzle_reject": "category:attention",
+      "findable": "obvious",
+      "seconds_spent": 115.3,
+      "pre_error_eval": "+1.89",
+      "pre_error_bucket": "losing",
+      "fen_before": "4r1nr/p1pk1ppp/8/2b5/N2p4/8/PPP2PPP/R1BR2K1 b - - 3 13",
+      "uci": "d4d3",
+      "best_move_san": "Bd6",
+      "best_move_uci": "c5d6",
+      "best_second_wp_gap": 0.33
+    },
+    {
+      "ply": 30,
+      "move_number": 15,
+      "color": "black",
+      "san": "Rd8",
+      "move_label": "15...Rd8",
+      "classification": "inaccuracy",
+      "error_type": "positional",
+      "error_category": "allowed_tactic",
+      "wp_loss": 9.15,
+      "cp_loss": 401,
+      "depth_to_find": ">cap",
+      "refute_depth": 1,
+      "refute_threshold_wp": 5.49,
+      "refutation": "d3e5",
+      "sacrifice": null,
+      "puzzle_reject": "refute_too_shallow",
+      "findable": "beyond analysis depth",
+      "seconds_spent": 4.1,
+      "pre_error_eval": "+5.35",
+      "pre_error_bucket": "losing",
+      "fen_before": "4r1nr/p1p2ppp/2k5/8/8/3N4/PPP2PPP/R1BR2K1 b - - 0 15",
+      "uci": "e8d8",
+      "best_move_san": "Kb7",
+      "best_move_uci": "c6b7",
+      "best_second_wp_gap": 0.16
+    }
+  ]
+}
