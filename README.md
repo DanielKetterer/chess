@@ -1,4 +1,4 @@
-# Chess analysis pipeline
+# Chess analysis pipeline ♟️
 
 
 This repo analyzes Chess.com games with Stockfish 18, writes a coaching report for each game, collates historical data into an error tracker, and attempts to mine from game positions 'puzzles' defined below in the 'Puzzle classification, gates, and attempts' section.
@@ -33,8 +33,8 @@ no authentication.
 
 ### 3. Clear out the previous owner's data
 
-A fresh fork inherits someone else's games. Before your first run:
-Either just delete the enture reports directory, or if command line savvy,
+A fresh fork inherits my games. Before your first run:
+Either just delete ( the reports, rendered_puzzle directories and puzzles.json ), or if command line savvy,
 
 ```bash
 git rm -r --cached reports rendered-puzzles
