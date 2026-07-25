@@ -2,6 +2,81 @@
 
 This repo analyzes Chess.com games with Stockfish and writes both a Markdown
 coaching report and a JSON sidecar that the trend report can collate later.
+---
+# Running this yourself: fork setup
+
+Everything below is for someone who has forked the repo and wants to use it analyzing
+their own games. You do not need a local Python environment for any of it. The
+workflows install Stockfish and the dependencies on GitHub's runners.
+
+## 1. Fork and enable Actions
+
+1. Fork the repo.
+2. Open the **Actions** tab on your fork. GitHub disables workflows on new forks
+   until you confirm; click the button to enable them.
+3. Go to **Settings > Actions > General > Workflow permissions** and select
+   **Read and write permissions**. Every workflow here commits its output back
+   to the branch, and they will all fail at the push step without this. This is
+   the single most common reason a fresh fork does nothing.
+
+## 2. Point it at your account
+
+Some code carries a hardcoded default of `DanielKetterer`:
+
+- The `username` input on each .yml workflow file. You can type your own username at
+  dispatch time too, but if you edit the `default:` value in the four files under
+  `.github/workflows/` you never have to think about it again.
+
+There is no API key and no secret to configure. The Chess.com public API needs
+no authentication.
+
+## 3. Clear out the previous owner's data
+
+A fresh fork inherits someone else's games. Before your first run:
+Either just delete the enture reports directory, or if command line savvy,
+
+```bash
+git rm -r --cached reports rendered-puzzles
+rm -rf reports rendered-puzzles
+echo '[]' > puzzles.json
+git add -A && git commit -m "Reset analysis data" && git push
+```
+
+Leaving them iin will mix your data with mine, not desired.
+
+## 5. Run it :)
+
+The four workflows, in the order you will meet them:
+
+| Workflow | Trigger | What it does | Runtime |
+|---|---|---|---|
+| `Analyze Chess Game` | manual | One game. Blank `game_id` means your latest. | 10 to 45 min |
+| `Analyze Daily Chess Games` | 3am cron, or manual | Every game from a local day that has no report yet | ~depends on volume |
+| `Blunder Report` | automatic on any push to `reports/**` | Rebuilds `blunder_report.md`, the CSV, and the scatter | under a minute |
+| `Puzzle utilities` | manual | List, render, or complete a puzzle. No Stockfish. | under a minute |
+
+Start with `Analyze Chess Game` on a single game and leave `depth` at `24`. It
+confirms the whole chain works, including the commit-back, in one run.
+
+You do not need to run `Blunder Report` by hand. It fires whenever the analysis
+workflows push new reports.
+
+## 6. Cost and the depth dial
+
+Depth is the only knob that meaningfully changes runtime, and it is not linear.
+Every step up roughly doubles the search.
+
+- `10`: seconds per game. Use it to check that your fork is wired up.
+- `18`: a few minutes per game. Fine for volume.
+- `24`: the default, and where the reports were tuned. Tens of minutes per game
+  with `--findability honest`, which runs a separate search ladder per error.
+- `30`: hours. Only worth it for a single game you care about.
+
+Public repos get unlimited free Actions minutes; private forks bill against
+your plan's quota, where a nightly depth-24 run will consume it quickly. The
+jobs carry `timeout-minutes: 350`, just under GitHub's 6 hour ceiling, so a
+runaway analysis fails visibly instead of being killed mid-commit.
+
 
 ## Analyze a game
 
@@ -197,99 +272,6 @@ the position; lines get played out on your own analysis board.
 
 ---
 
-# Running this yourself: fork setup
-
-Everything below is for someone who has forked the repo and wants it analyzing
-their own games. You do not need a local Python environment for any of it. The
-workflows install Stockfish and the dependencies on GitHub's runners.
-
-## 1. Fork and enable Actions
-
-1. Fork the repo.
-2. Open the **Actions** tab on your fork. GitHub disables workflows on new forks
-   until you confirm; click the button to enable them.
-3. Go to **Settings > Actions > General > Workflow permissions** and select
-   **Read and write permissions**. Every workflow here commits its output back
-   to the branch, and they will all fail at the push step without this. This is
-   the single most common reason a fresh fork does nothing.
-
-## 2. Point it at your account
-
-Two things carry a hardcoded default of `DanielKetterer`:
-
-- The `username` input on each workflow. You can type your own username at
-  dispatch time, but if you edit the `default:` value in the four files under
-  `.github/workflows/` you never have to think about it again.
-- The scheduled daily run, which has no dispatch input to override. Editing the
-  default in `daily-analyze.yml` is the only way to change that one.
-
-There is no API key and no secret to configure. The Chess.com public API needs
-no authentication.
-
-## 3. Set your timezone
-
-`analyze.yml` and `daily-analyze.yml` both take a `timezone` input, defaulting
-to `America/New_York`. It does two jobs: it decides which local day the daily
-run scans for new games, and it decides which `reports/YYYY/MM/DD` folder the
-reports land in.
-
-Set it to your own IANA zone (`Europe/London`, `Asia/Kolkata`, and so on) and
-keep the two workflows on the same value. If they disagree, the same game can
-be filed under two different days depending on which workflow analyzed it.
-
-The `schedule:` cron in `daily-analyze.yml` is separate and is always in UTC.
-`0 7 * * *` is 3am Eastern during daylight saving and 2am Eastern outside it.
-Adjust the hour for your own zone. GitHub also disables scheduled workflows on
-repos with no activity for 60 days, and the queue can run a scheduled job late
-under load, so treat the nightly run as reliable but not punctual.
-
-## 4. Clear out the previous owner's data
-
-A fresh fork inherits someone else's games. Before your first run:
-
-```bash
-git rm -r --cached reports rendered-puzzles
-rm -rf reports rendered-puzzles
-echo '[]' > puzzles.json
-git add -A && git commit -m "Reset analysis data" && git push
-```
-
-Leaving them in place is not harmful, but every report belongs to a different
-player, so the blunder report's trends will be someone else's until the old
-rows age out.
-
-## 5. Run it
-
-The four workflows, in the order you will meet them:
-
-| Workflow | Trigger | What it does | Runtime |
-|---|---|---|---|
-| `Analyze Chess Game` | manual | One game. Blank `game_id` means your latest. | 5 to 90 min |
-| `Analyze Daily Chess Games` | 3am cron, or manual | Every game from a local day that has no report yet | up to ~6 hr |
-| `Blunder Report` | automatic on any push to `reports/**` | Rebuilds `blunder_report.md`, the CSV, and the scatter | under a minute |
-| `Puzzle utilities` | manual | List, render, or complete a puzzle. No Stockfish. | under a minute |
-
-Start with `Analyze Chess Game` on a single game and leave `depth` at `24`. It
-confirms the whole chain works, including the commit-back, in one run.
-
-You do not need to run `Blunder Report` by hand. It fires whenever the analysis
-workflows push new reports.
-
-## 6. Cost and the depth dial
-
-Depth is the only knob that meaningfully changes runtime, and it is not linear.
-Every step up roughly doubles the search.
-
-- `10`: seconds per game. Use it to check that your fork is wired up.
-- `18`: a few minutes per game. Fine for volume.
-- `24`: the default, and where the reports were tuned. Tens of minutes per game
-  with `--findability honest`, which runs a separate search ladder per error.
-- `30`: hours. Only worth it for a single game you care about.
-
-Public repos get unlimited free Actions minutes; private forks bill against
-your plan's quota, where a nightly depth-24 run will consume it quickly. The
-jobs carry `timeout-minutes: 350`, just under GitHub's 6 hour ceiling, so a
-runaway analysis fails visibly instead of being killed mid-commit.
 
 ## What each file does
 
