@@ -1,16 +1,16 @@
-## Chess analysis pipeline
+# Chess analysis pipeline
 
 
 This repo analyzes Chess.com games with Stockfish 18, writes a coaching report for each game, collates historical data into an error tracker, and attempts to mine from game positions 'puzzles' defined below in the 'Puzzle classification, gates, and attempts' section.
 
 
-# Running this yourself: fork setup
+## Running this yourself: fork setup
 
 Everything below is for someone who has forked the repo and wants to use it analyzing
 their own games. You do not need a local Python environment for any of it. The
 workflows install Stockfish and the dependencies on GitHub's runners.
 
-## 1. Fork and enable Actions
+### 1. Fork and enable Actions
 
 1. Fork the repo.
 2. Open the **Actions** tab on your fork. GitHub disables workflows on new forks
@@ -20,7 +20,7 @@ workflows install Stockfish and the dependencies on GitHub's runners.
    to the branch, and they will all fail at the push step without this. This is
    the single most common reason a fresh fork does nothing.
 
-## 2. Point it at your account
+### 2. Point it at your account
 
 Some code carries a hardcoded default of `DanielKetterer`:
 
@@ -31,7 +31,7 @@ Some code carries a hardcoded default of `DanielKetterer`:
 There is no API key and no secret to configure. The Chess.com public API needs
 no authentication.
 
-## 3. Clear out the previous owner's data
+### 3. Clear out the previous owner's data
 
 A fresh fork inherits someone else's games. Before your first run:
 Either just delete the enture reports directory, or if command line savvy,
@@ -45,7 +45,7 @@ git add -A && git commit -m "Reset analysis data" && git push
 
 Leaving them iin will mix your data with mine, not desired.
 
-## 4. Run it :)
+### 4. Run it :)
 
 The four workflows, in the order you will meet them:
 
@@ -62,7 +62,7 @@ confirms the whole chain works, including the commit-back, in one run.
 You do not need to run `Blunder Report` by hand. It fires whenever the analysis
 workflows push new reports.
 
-## 6. Cost and the depth dial
+### 5. Cost and the depth dial
 
 Depth is the only knob that meaningfully changes runtime, and it is not linear.
 Every step up roughly doubles the search.
