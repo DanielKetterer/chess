@@ -474,7 +474,25 @@ def provenance_line(prov, floor, cap, n_games, n_rows):
     return "REAL DATA  |  " + "  |  ".join(bits)
 
 
+def report_link(report_path, out_dir):
+    """Markdown link to a report, relative to the blunder report's own folder.
+
+    Reports live under reports/YYYY/MM/DD/, so printing the raw path made the
+    table column wider than the rest of the row and left it unclickable. The
+    link text is the filename; the target is resolved from wherever the blunder
+    report itself was written.
+    """
+    if not report_path:
+        return ""
+    try:
+        rel = os.path.relpath(report_path, out_dir or ".")
+    except ValueError:  # different drives on Windows
+        rel = report_path
+    return f"[{os.path.basename(report_path)}]({rel.replace(os.sep, '/')})"
+
+
 def write_markdown(rows, n_games, path, image_path, floor, cap, provenance):
+    out_dir = str(path.parent)
     lines = ["# Blunder Report", ""]
     lines.append(provenance_line(provenance, floor, cap, n_games, len(rows)))
     lines.append("")
@@ -496,7 +514,8 @@ def write_markdown(rows, n_games, path, image_path, floor, cap, provenance):
             f"{row.move_label} | {row.classification} | {row.error_category or row.error_type} | "
             f"{row.wp_loss:.1f} | {row.depth} | {row.refute_depth} | "
             f"{'' if row.seconds_spent is None else row.seconds_spent} | "
-            f"{row.pre_error_bucket} | {row.report_path} |")
+            f"{row.pre_error_bucket} | {report_link(row.report_path, out_dir)} |")
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -518,9 +537,17 @@ def main():
                              "x-axis; defaults to the analyzed game count")
     args = parser.parse_args()
 
+    for target in (args.out, args.csv, args.graph):
+        parent = Path(target).parent
+        if str(parent) not in ("", "."):
+            parent.mkdir(parents=True, exist_ok=True)
+
     root = Path(args.reports_dir)
     records = []
     seen_md = set()
+    # The `**` glob walks the reports/YYYY/MM/DD tree and still picks up flat
+    # reports left over from before the tree existed, so no migration is
+    # required for old runs to keep counting.
     # Sidecars first; a markdown file with a sidecar is not parsed twice.
     for p in sorted(root.glob("**/*.json")):
         try:

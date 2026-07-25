@@ -19,14 +19,25 @@ def get_json(url, username):
 
 
 def known_game_ids(reports_dir):
+    """Every game id that already has a report anywhere under reports_dir.
+
+    The `**` glob walks the reports/YYYY/MM/DD tree and still matches flat
+    reports left over from before that tree existed.
+
+    Both the id printed inside the report and the one carried by the filename
+    are recorded. They should be identical, but a false negative here is
+    expensive: it silently re-runs a full Stockfish analysis on a game that was
+    already done. Adding both costs nothing and removes that failure mode.
+    """
     ids = set()
     for path in Path(reports_dir).glob("**/*.md"):
+        stem_id = path.stem.split("_", 1)[0].strip()
+        if stem_id:
+            ids.add(stem_id.casefold())
         text = path.read_text(encoding="utf-8", errors="ignore")
         match = GAME_RE.search(text)
         if match:
             ids.add(match.group(1).rstrip("/").rsplit("/", 1)[-1].casefold())
-            continue
-        ids.add(path.stem.split("_", 1)[0].casefold())
     return ids
 
 

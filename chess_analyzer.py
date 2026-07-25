@@ -40,6 +40,89 @@ import pandas as pd
 
 STOCKFISH_PATH = os.environ.get("STOCKFISH_PATH", r"C:\Users\admin\Downloads\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe")
 CHESSCOM_API_ROOT = "https://api.chess.com/pub"
+
+
+# --- output paths ----------------------------------------------------------
+# Reports are filed under reports/YYYY/MM/DD/. The directory is the local
+# calendar day the game finished; the timestamp inside the filename stays UTC
+# so the identifier is unambiguous no matter which timezone filed it.
+
+def ensure_parent(path):
+    """Create the parent directory of `path` if it is missing. Returns path."""
+    parent = os.path.dirname(os.path.abspath(path))
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    return path
+
+
+def safe_slug(value):
+    """Filesystem-safe fragment. Chess.com ids are uuids, but a --game-id can
+    arrive as a full URL, so the last path segment is taken and scrubbed."""
+    tail = str(value or "").rstrip("/").rsplit("/", 1)[-1]
+    cleaned = "".join(ch if (ch.isalnum() or ch in "-_") else "-" for ch in tail)
+    return cleaned.strip("-") or "game"
+
+
+def report_datetime(meta):
+    """(utc_datetime, exact) for the analyzed game.
+
+    `exact` is False when only a calendar date was available. That distinction
+    matters: a PGN date read as midnight UTC lands on the previous day in any
+    western timezone, so a date-only game is filed on the date as written
+    rather than shifted. Falls back to now rather than raising: a missing end
+    time should misfile a report by a day, not fail the run.
+    """
+    raw = str(meta.get("game_end_time_utc") or "").strip()
+    if raw:
+        try:
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(timezone.utc), True
+        except ValueError:
+            pass
+    raw_date = str(meta.get("game_date") or "").strip().replace(".", "-")[:10]
+    try:
+        return (datetime.strptime(raw_date, "%Y-%m-%d")
+                .replace(tzinfo=timezone.utc), False)
+    except ValueError:
+        return datetime.now(timezone.utc), True
+
+
+def local_date_parts(dt_utc, tz_name="UTC"):
+    """(YYYY, MM, DD) strings for `dt_utc` rendered in `tz_name`."""
+    tz = timezone.utc
+    if tz_name and tz_name.upper() != "UTC":
+        try:
+            from zoneinfo import ZoneInfo
+            tz = ZoneInfo(tz_name)
+        except Exception:
+            print(f"Unknown timezone {tz_name!r}; filing by UTC date instead.",
+                  file=sys.stderr)
+    local = dt_utc.astimezone(tz)
+    return f"{local.year:04d}", f"{local.month:02d}", f"{local.day:02d}"
+
+
+def dated_report_base(reports_dir, meta, tz_name="UTC"):
+    """Return `<reports_dir>/YYYY/MM/DD/<game-id>_<utc-stamp>`, creating dirs.
+
+    Callers append `_white.md`, `_black.png`, and so on. Placing files here
+    rather than in the workflow means re-analyzing a game overwrites its old
+    report instead of scattering near-duplicates across the tree.
+
+    The identifier is the last segment of the game URL, not meta["game_id"].
+    Those differ: game_id prefers the Chess.com uuid, while every filename ever
+    written by the workflows came from the URL. unanalyzed_games.py falls back
+    to the filename stem when it cannot read a report, and that fallback only
+    works if both sides agree on which of the two identifiers a filename holds.
+    """
+    dt, exact = report_datetime(meta)
+    year, month, day = local_date_parts(dt, tz_name if exact else "UTC")
+    directory = os.path.join(reports_dir, year, month, day)
+    os.makedirs(directory, exist_ok=True)
+    stamp = dt.strftime("%Y%m%dT%H%M%SZ")
+    ident = meta.get("game_url") or meta.get("game_id")
+    return os.path.join(directory, f"{safe_slug(ident)}_{stamp}")
 PIECE_VALUES = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3,
                 chess.ROOK: 5, chess.QUEEN: 9, chess.KING: 0}
 
@@ -1725,6 +1808,7 @@ def load_puzzles(path):
 
 
 def save_puzzles(path, puzzles):
+    ensure_parent(path)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(puzzles, f, indent=2)
 
@@ -2057,6 +2141,15 @@ def main():
                          "censored rather than as a number)")
     ap.add_argument("--out", default="report.md")
     ap.add_argument("--graph", default="eval_graph.png")
+    ap.add_argument("--reports-dir", default="",
+                    help="file outputs as <dir>/YYYY/MM/DD/<game-id>_<utc-stamp>"
+                         "_<color>.{md,png,json}, creating directories as "
+                         "needed. Overrides --out and --graph. This is what the "
+                         "GitHub Actions workflows use")
+    ap.add_argument("--reports-timezone", default="UTC",
+                    help="timezone whose calendar day picks the YYYY/MM/DD "
+                         "folder under --reports-dir (default UTC). The "
+                         "timestamp in the filename is always UTC")
     ap.add_argument("--perspective", choices=["white", "black", "both"],
                     default="both",
                     help="whose report to write. both (default) writes one file "
@@ -2155,8 +2248,18 @@ def main():
         print(f"Demoted {demoted} book sacrifice(s) to missed_tactic",
               file=sys.stderr)
     colors = ["white", "black"] if args.perspective == "both" else [args.perspective]
+    dated_base = ""
+    if args.reports_dir:
+        dated_base = dated_report_base(args.reports_dir, meta,
+                                       args.reports_timezone)
+        print(f"Filing reports under {os.path.dirname(dated_base)}",
+              file=sys.stderr)
     for color in colors:
-        if args.perspective == "both":
+        if dated_base:
+            # One game, one directory: color is a filename suffix, not a folder.
+            out_path = f"{dated_base}_{color}.md"
+            graph_path = f"{dated_base}_{color}.png"
+        elif args.perspective == "both":
             base, ext = os.path.splitext(args.out)
             out_path = f"{base}_{color}{ext}"
 
@@ -2166,6 +2269,8 @@ def main():
             out_path = args.out
             graph_path = args.graph
 
+        ensure_parent(out_path)
+        ensure_parent(graph_path)
         make_graph(moves, graph_path, color)
 
         puzzle_stats = append_puzzles(args.puzzles_file, meta, moves, color,
