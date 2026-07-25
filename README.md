@@ -1,13 +1,10 @@
 ## Chess analysis pipeline
----
 
-This repo analyzes Chess.com games with Stockfish and writes both a Markdown
-coaching report and a JSON sidecar that the trend report can collate later.
+This repo analyzes Chess.com games with Stockfish 18, writes a coaching report for each game, collates historical data into an error tracker, and attempts to mine from game positions 'puzzles' defined below in the 'Puzzle classification, gates, and attempts' section.
 
----
 
 # Running this yourself: fork setup
-
+---
 Everything below is for someone who has forked the repo and wants to use it analyzing
 their own games. You do not need a local Python environment for any of it. The
 workflows install Stockfish and the dependencies on GitHub's runners.
@@ -47,7 +44,7 @@ git add -A && git commit -m "Reset analysis data" && git push
 
 Leaving them iin will mix your data with mine, not desired.
 
-## 5. Run it :)
+## 4. Run it :)
 
 The four workflows, in the order you will meet them:
 
