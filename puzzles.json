@@ -1,0 +1,37 @@
+[
+  {
+    "id": "p2017d672f6",
+    "fen_before": "r4rk1/ppn2p1p/2p1pq2/3p2p1/5P2/P1NQPR2/1PP3PP/R5K1 w - - 0 19",
+    "move_played": "f3h3",
+    "move_played_san": "Rh3",
+    "best_move": "f4g5",
+    "best_move_san": "fxg5",
+    "refutation": null,
+    "refutation_san": null,
+    "puzzle_type": "brilliant_sacrifice",
+    "category": "brilliant_sacrifice",
+    "prompt_type": "best_move",
+    "prompt": "Find the best move in this position.",
+    "best_second_wp_gap": 6.02,
+    "refute_depth": 7,
+    "wp_loss": 9.6,
+    "eval_before": "+1.15",
+    "pre_error_bucket": "balanced",
+    "sacrifice": {
+      "trough_pawns": -4,
+      "final_pawns": 1,
+      "trough_ply": 25,
+      "pv_plies": 39,
+      "size": "piece",
+      "quiet": false,
+      "mates": false,
+      "recovered": true,
+      "kind": "sham",
+      "desperado": false
+    },
+    "attempts": [],
+    "source_game": "https://www.chess.com/game/live/171886517316",
+    "move_number": 19,
+    "date_generated": "2026-07-25T11:55:13Z"
+  }
+]
