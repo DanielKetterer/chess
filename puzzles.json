@@ -357,5 +357,41 @@
     "source_game": "https://www.chess.com/game/live/171987878016",
     "move_number": 24,
     "date_generated": "2026-07-25T14:03:35Z"
+  },
+  {
+    "id": "p119ae7e0c2",
+    "fen_before": "r1b1k2r/p1pqbppp/1pn1p3/4P3/4B1PP/2N1BQ2/PPP2K2/R6R b kq - 3 14",
+    "move_played": "c8b7",
+    "move_played_san": "Bb7",
+    "best_move": "c6e5",
+    "best_move_san": "Nxe5",
+    "refutation": null,
+    "refutation_san": null,
+    "puzzle_type": "missed_tactic",
+    "category": "missed_tactic",
+    "prompt_type": "best_move",
+    "prompt": "Find the best move in this position.",
+    "best_second_wp_gap": 33.94,
+    "refute_depth": 8,
+    "wp_loss": 34.7,
+    "eval_before": "-1.37",
+    "pre_error_bucket": "balanced",
+    "sacrifice": {
+      "trough_pawns": -2,
+      "final_pawns": 2,
+      "trough_ply": 7,
+      "pv_plies": 31,
+      "size": "exchange",
+      "quiet": false,
+      "mates": false,
+      "recovered": true,
+      "kind": "sham",
+      "desperado": false,
+      "rejected": "obvious"
+    },
+    "attempts": [],
+    "source_game": "https://www.chess.com/game/daily/1001249768",
+    "move_number": 14,
+    "date_generated": "2026-07-25T14:59:40Z"
   }
 ]
