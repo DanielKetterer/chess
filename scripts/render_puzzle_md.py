@@ -25,7 +25,7 @@ except ImportError:  # renderer still works, minus SVG, SAN, and mirroring
 PIECES = "pnbrqkPNBRQK"
 REVIEW_INTERVALS_DAYS = [7, 30, 90]
 RETRY_AFTER_FAILURE_DAYS = 1
-KNOWN_TYPES = {"missed_tactic", "allowed_tactic", "endgame"}
+KNOWN_TYPES = {"brilliant_sacrifice", "missed_tactic", "allowed_tactic", "endgame"}
 
 
 # --------------------------------------------------------------------------
@@ -318,7 +318,7 @@ def prompt_text(puzzle, fields, fen):
             "No default prompt is used, because the wrong one leaks the answer."
         )
     side = "White" if side_to_move(fen) == "w" else "Black"
-    if ptype == "missed_tactic":
+    if ptype in ("brilliant_sacrifice", "missed_tactic"):
         return ptype, f"**{side} to move.** Find the best move."
     if ptype == "endgame":
         return ptype, f"**{side} to move.** Find the best move, and name the method."
