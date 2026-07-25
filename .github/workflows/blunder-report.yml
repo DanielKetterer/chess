@@ -10,8 +10,12 @@ on:
         type: string
   push:
     paths:
-      - "reports/**/*.md"
+      # "reports/**" matches every depth of the reports/YYYY/MM/DD tree.
+      # A pattern like "reports/**/*.md" requires at least one directory
+      # level and would miss anything left at the root of reports/.
+      - "reports/**"
       - "blunder_report.py"
+      - ".github/workflows/blunder-report.yml"
 
 permissions:
   contents: write
@@ -45,6 +49,10 @@ jobs:
         env:
           USERNAME: ${{ inputs.username || 'DanielKetterer' }}
         run: |
+          set -euo pipefail
+          # blunder_report.py walks reports/ recursively, so it collates the
+          # dated tree and any flat reports left from before it existed.
+          mkdir -p reports
           python blunder_report.py \
             --reports-dir reports \
             --out blunder_report.md \

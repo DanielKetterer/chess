@@ -35,6 +35,14 @@ on:
           - heuristic
           - honest
 
+      timezone:
+        description: >-
+          IANA timezone whose calendar day picks the reports/YYYY/MM/DD folder.
+          Keep this identical to the daily workflow.
+        required: true
+        default: America/New_York
+        type: string
+
 # Allows the workflow to commit generated reports.
 permissions:
   contents: write
@@ -98,15 +106,27 @@ jobs:
           GAME_ID: ${{ inputs.game_id }}
           DEPTH: ${{ inputs.depth }}
           FINDABILITY: ${{ inputs.findability }}
+          REPORT_TZ: ${{ inputs.timezone }}
         run: |
-          mkdir -p reports analysis-output
+          set -euo pipefail
+
+          # chess_analyzer.py creates reports/YYYY/MM/DD itself. The root is
+          # created here anyway so the commit step always has a path to stage,
+          # and so a fresh fork gets the directory on its first run.
+          mkdir -p reports
+
+          # --reports-dir makes the analyzer place its own output at
+          # reports/YYYY/MM/DD/<game-id>_<utc-stamp>_<color>.{md,png,json}.
+          # It knows the game id and end time; the workflow does not until the
+          # run is over, which is why this step used to scrape them back out of
+          # the finished Markdown with sed and then mv the files into place.
           args=(
             --username "$USERNAME"
             --depth "$DEPTH"
             --findability "$FINDABILITY"
             --perspective both
-            --out analysis-output/report.md
-            --graph analysis-output/report.png
+            --reports-dir reports
+            --reports-timezone "$REPORT_TZ"
             --puzzles-file puzzles.json
           )
 
@@ -116,28 +136,12 @@ jobs:
 
           python chess_analyzer.py "${args[@]}"
 
-          game_url=$(sed -n 's/^Game: //p' analysis-output/report_white.md | head -n 1)
-          analyzed_game_id=${game_url%/}
-          analyzed_game_id=${analyzed_game_id##*/}
-          game_time=$(sed -n 's/^Game end time UTC: //p' analysis-output/report_white.md | head -n 1)
-          game_date=$(sed -n 's/^Date: *//p' analysis-output/report_white.md | head -n 1 | cut -d '|' -f 1 | xargs)
-          timestamp=$(date -u -d "${game_time:-${game_date:-now}}" +%Y%m%dT%H%M%SZ 2>/dev/null || date -u +%Y%m%dT%H%M%SZ)
-          base="reports/${analyzed_game_id}_${timestamp}"
-
-          mv analysis-output/report_white.md "${base}_white.md"
-          mv analysis-output/report_black.md "${base}_black.md"
-          mv analysis-output/report_white.png "${base}_white.png"
-          mv analysis-output/report_black.png "${base}_black.png"
-          mv analysis-output/report_white.json "${base}_white.json"
-          mv analysis-output/report_black.json "${base}_black.json"
-
       - name: Commit reports to repository
         env:
           BRANCH_NAME: ${{ github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm -rf analysis-output
 
           git add -f reports/ puzzles.json
 
@@ -146,7 +150,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Add timestamped chess analysis"
+          git commit -m "Add dated chess analysis"
 
           # Incorporate commits made while Stockfish was running.
           git pull --rebase -X theirs origin "$BRANCH_NAME"

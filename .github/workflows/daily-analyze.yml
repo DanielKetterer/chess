@@ -13,6 +13,13 @@ on:
         required: false
         default: ""
         type: string
+      timezone:
+        description: >-
+          IANA timezone. Decides both which local day is scanned and which
+          reports/YYYY/MM/DD folder the reports land in.
+        required: false
+        default: America/New_York
+        type: string
   schedule:
     # Runs at 3am America/New_York during daylight-saving time.
     - cron: "0 7 * * *"
@@ -75,8 +82,14 @@ jobs:
         env:
           USERNAME: ${{ inputs.username || 'DanielKetterer' }}
           LOCAL_DATE: ${{ inputs.date }}
+          REPORT_TZ: ${{ inputs.timezone || 'America/New_York' }}
         run: |
-          args=(--username "$USERNAME" --timezone America/New_York --reports-dir reports)
+          set -euo pipefail
+          # unanalyzed_games.py must walk reports/ recursively now that reports
+          # live in dated subfolders. A non-recursive glob here silently finds
+          # nothing already analyzed and re-runs Stockfish on the whole archive.
+          mkdir -p reports
+          args=(--username "$USERNAME" --timezone "$REPORT_TZ" --reports-dir reports)
           if [ -n "$LOCAL_DATE" ]; then
             args+=(--date "$LOCAL_DATE")
           fi
@@ -87,33 +100,24 @@ jobs:
         env:
           STOCKFISH_PATH: /usr/local/bin/stockfish
           USERNAME: ${{ inputs.username || 'DanielKetterer' }}
+          REPORT_TZ: ${{ inputs.timezone || 'America/New_York' }}
         run: |
-          mkdir -p reports analysis-output
+          set -euo pipefail
+          mkdir -p reports
           while IFS= read -r game_id; do
             [ -n "$game_id" ] || continue
+            # The analyzer files each game under reports/YYYY/MM/DD/ itself,
+            # keyed on the game's own end time, so re-analyzing a game
+            # overwrites its report instead of adding a near-duplicate.
             python chess_analyzer.py \
               --username "$USERNAME" \
               --game-id "$game_id" \
               --depth 24 \
               --findability honest \
               --perspective both \
-              --out analysis-output/report.md \
-              --graph analysis-output/report.png \
+              --reports-dir reports \
+              --reports-timezone "$REPORT_TZ" \
               --puzzles-file puzzles.json
-
-            game_url=$(sed -n 's/^Game: //p' analysis-output/report_white.md | head -n 1)
-            analyzed_game_id=${game_url%/}
-            analyzed_game_id=${analyzed_game_id##*/}
-            game_time=$(sed -n 's/^Game end time UTC: //p' analysis-output/report_white.md | head -n 1)
-            game_date=$(sed -n 's/^Date: *//p' analysis-output/report_white.md | head -n 1 | cut -d '|' -f 1 | xargs)
-            timestamp=$(date -u -d "${game_time:-${game_date:-now}}" +%Y%m%dT%H%M%SZ 2>/dev/null || date -u +%Y%m%dT%H%M%SZ)
-            base="reports/${analyzed_game_id}_${timestamp}"
-            mv analysis-output/report_white.md "${base}_white.md"
-            mv analysis-output/report_black.md "${base}_black.md"
-            mv analysis-output/report_white.png "${base}_white.png"
-            mv analysis-output/report_black.png "${base}_black.png"
-            mv analysis-output/report_white.json "${base}_white.json"
-            mv analysis-output/report_black.json "${base}_black.json"
           done < games_to_analyze.txt
 
       - name: Commit reports to repository
@@ -122,7 +126,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm -rf analysis-output games_to_analyze.txt
+          rm -f games_to_analyze.txt
           git add -f reports/ puzzles.json
           if git diff --cached --quiet; then
             echo "No new daily reports."

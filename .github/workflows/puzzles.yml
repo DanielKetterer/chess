@@ -22,7 +22,7 @@ on:
         default: false
         type: boolean
       render_dir:
-        description: Directory for committed rendered puzzle cards
+        description: Root directory for committed rendered puzzle cards
         required: false
         default: rendered-puzzles
       fen:
@@ -68,49 +68,82 @@ jobs:
               cat puzzle.md
               ;;
             render)
+              # Cards are filed under <render_dir>/YYYY/MM/DD/<puzzle-id>.md,
+              # dated by when the puzzle was generated, so the folder matches
+              # the reports/ tree that produced it. One resolver handles both
+              # the single-selector and render-everything cases so the two
+              # cannot disagree about where a card belongs.
               mkdir -p "$RENDER_DIR"
-              if [ "$RENDER_ALL_UNRENDERED" = "true" ]; then
-                mapfile -t selectors < <(python - <<'PY'
+              python - > /tmp/puzzle_targets.txt <<'PY'
           import os
+          from datetime import datetime, timezone
           from pathlib import Path
-          from scripts.render_puzzle_md import load_puzzles, puzzle_id
 
-          puzzles = load_puzzles(Path.cwd() / os.environ["PUZZLES_FILE"])
-          out_dir = Path(os.environ["RENDER_DIR"])
-          for puzzle in puzzles:
-              pid = puzzle_id(puzzle)
-              if not (out_dir / f"{pid}.md").exists():
-                  print(pid)
-          PY
-                )
-                if [ "${#selectors[@]}" -eq 0 ]; then
-                  echo "All puzzles already have rendered Markdown cards in $RENDER_DIR."
-                  exit 0
-                fi
-              else
-                test -n "$PUZZLE_SELECTOR"
-                mapfile -t selectors < <(python - <<'PY'
-          import os
-          from pathlib import Path
           from scripts.render_puzzle_md import load_puzzles, original_fen, puzzle_id
 
-          selector = os.environ["PUZZLE_SELECTOR"]
-          for puzzle in load_puzzles(Path.cwd() / os.environ["PUZZLES_FILE"]):
-              if selector in (puzzle_id(puzzle), puzzle.get("id"), original_fen(puzzle)):
-                  print(puzzle_id(puzzle))
-                  break
+
+          def day_dir(puzzle):
+              """YYYY/MM/DD from the puzzle's generation time, in UTC.
+
+              Old puzzle records predate date_generated, so fall back to the
+              first recorded attempt and then to today. Anything that has
+              already been rendered is skipped before this runs, so the
+              fallback cannot move an existing card.
+              """
+              raw = str(puzzle.get("date_generated") or "").strip()
+              if not raw:
+                  attempts = puzzle.get("attempts") or []
+                  first = attempts[0] if attempts else {}
+                  raw = str((first or {}).get("attempted_utc") or "").strip()
+              try:
+                  dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+              except ValueError:
+                  dt = datetime.now(timezone.utc)
+              if dt.tzinfo is None:
+                  dt = dt.replace(tzinfo=timezone.utc)
+              dt = dt.astimezone(timezone.utc)
+              return f"{dt.year:04d}/{dt.month:02d}/{dt.day:02d}"
+
+
+          out_dir = Path(os.environ["RENDER_DIR"])
+          puzzles = load_puzzles(Path.cwd() / os.environ["PUZZLES_FILE"])
+
+          if os.environ.get("RENDER_ALL_UNRENDERED") == "true":
+              # Match on filename at any depth so cards rendered flat before
+              # the tree existed still count as rendered.
+              existing = {p.name for p in out_dir.rglob("*.md")}
+              for puzzle in puzzles:
+                  pid = puzzle_id(puzzle)
+                  if f"{pid}.md" not in existing:
+                      print(f"{day_dir(puzzle)}/{pid}")
           else:
-              raise SystemExit(f"No puzzle matched selector {selector!r}")
+              selector = os.environ.get("PUZZLE_SELECTOR", "").strip()
+              if not selector:
+                  raise SystemExit(
+                      "render mode needs puzzle_selector, or "
+                      "render_all_unrendered: true")
+              for puzzle in puzzles:
+                  if selector in (puzzle_id(puzzle), puzzle.get("id"), original_fen(puzzle)):
+                      print(f"{day_dir(puzzle)}/{puzzle_id(puzzle)}")
+                      break
+              else:
+                  raise SystemExit(f"No puzzle matched selector {selector!r}")
           PY
-                )
+              mapfile -t targets < /tmp/puzzle_targets.txt
+              if [ "${#targets[@]}" -eq 0 ]; then
+                echo "All puzzles already have rendered Markdown cards under $RENDER_DIR."
+                exit 0
               fi
 
-              for selector in "${selectors[@]}"; do
+              for target in "${targets[@]}"; do
+                [ -n "$target" ] || continue
+                mkdir -p "$RENDER_DIR/$(dirname "$target")"
                 python scripts/render_puzzle_md.py \
                   --puzzles-file "$PUZZLES_FILE" \
-                  --selector "$selector" \
+                  --selector "$(basename "$target")" \
                   --any \
-                  --out "$RENDER_DIR/$selector.md"
+                  --out "$RENDER_DIR/$target.md"
+                echo "Rendered $RENDER_DIR/$target.md"
               done
               ;;
             complete)
