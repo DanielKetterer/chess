@@ -1,8 +1,11 @@
-# Chess analysis pipeline
+## Chess analysis pipeline
+---
 
 This repo analyzes Chess.com games with Stockfish and writes both a Markdown
 coaching report and a JSON sidecar that the trend report can collate later.
+
 ---
+
 # Running this yourself: fork setup
 
 Everything below is for someone who has forked the repo and wants to use it analyzing
