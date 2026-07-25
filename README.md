@@ -235,14 +235,18 @@ Attempt schema:
   "best_second_wp_gap": 12.4,
   "attempts": [
     {
-      "attempted_utc": "2026-07-24T00:00:00Z",
+      "timestamp": "2026-07-24T00:00:00+00:00",
       "move": "...",
-      "result": "correct"
+      "found": true
     }
-  ],
-  "completed": true
+  ]
 }
 ```
+
+The attempt log is the completion state: a puzzle is solved once any attempt
+has `found: true`. Failed attempts remain useful for review scheduling, and a
+successful puzzle is offered again after progressively longer intervals rather
+than being permanently removed from the queue.
 
 Attention errors are written to sidecar `metrics` as `attention_errors`,
 `player_moves`, and `attention_errors_per_100_moves`. `blunder_report.py` plots
@@ -265,8 +269,9 @@ not run Stockfish. It supports:
   generated. Set `render_all_unrendered: true` to catch up every puzzle that
   has no card yet; a card found at any depth counts as rendered, so cards
   written before the tree existed are not duplicated.
-- `complete`: run `scripts/mark_puzzle_attempt.py` to append a completion
-  attempt, mark the puzzle complete, and commit the updated puzzle file.
+- `complete`: run `scripts/mark_puzzle_attempt.py` to append a successful
+  attempt (`timestamp`, `found`, and the optional move) and commit the updated
+  puzzle file. The renderer consumes that same log for status and scheduling.
 
 Rendering is deliberately separate from submitting a move. Cards are for reading
 the position; lines get played out on your own analysis board.
