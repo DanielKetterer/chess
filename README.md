@@ -1,10 +1,10 @@
 ## Chess analysis pipeline
-
+---
 This repo analyzes Chess.com games with Stockfish 18, writes a coaching report for each game, collates historical data into an error tracker, and attempts to mine from game positions 'puzzles' defined below in the 'Puzzle classification, gates, and attempts' section.
 
 
 # Running this yourself: fork setup
----
+
 Everything below is for someone who has forked the repo and wants to use it analyzing
 their own games. You do not need a local Python environment for any of it. The
 workflows install Stockfish and the dependencies on GitHub's runners.
