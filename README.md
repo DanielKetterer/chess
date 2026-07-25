@@ -16,6 +16,56 @@ Useful options:
 - `--perspective white|black|both` controls which player reports are written.
 - `--findability honest` also measures depth-to-find for the best move.
 - `--puzzles-file puzzles.json` chooses the persistent tactics/puzzle file.
+- `--reports-dir reports` files the outputs into the dated tree described
+  below instead of writing to `--out` and `--graph` directly.
+- `--reports-timezone <IANA name>` picks which calendar day a game belongs to.
+
+## Where files land
+
+Reports and rendered puzzle cards are organized by date:
+
+```
+reports/
+  2026/
+    07/
+      24/
+        a1b2c3d4_20260725T013000Z_white.md
+        a1b2c3d4_20260725T013000Z_white.png
+        a1b2c3d4_20260725T013000Z_white.json
+        a1b2c3d4_20260725T013000Z_black.md
+        ...
+rendered-puzzles/
+  2026/
+    07/
+      24/
+        p3f9a12bc4.md
+```
+
+Two things are worth knowing about that layout.
+
+**The folder is a local day, the filename stamp is UTC.** A game that ends at
+01:30 UTC on July 25 was played on the evening of July 24 in New York, so with
+`--reports-timezone America/New_York` it files under `2026/07/24/` while the
+filename still reads `20260725T013000Z`. The stamp is a globally unambiguous
+identifier; the folder is for finding the games you remember playing. If you
+would rather they always agree, set the timezone to `UTC` everywhere.
+
+**Placement is deterministic.** The directory and filename are derived from the
+game's own end time, so re-analyzing a game at a different depth overwrites its
+old report instead of leaving a near-duplicate somewhere else in the tree.
+`chess_analyzer.py` creates the directories it needs; the workflows create the
+`reports/` root so a fresh fork has one on the first run.
+
+Nothing needs migrating. `blunder_report.py` walks `reports/` recursively and
+still collates flat files from before the tree existed. If you want the old
+files tidied anyway:
+
+```bash
+python migrate_report_tree.py --reports-dir reports --timezone America/New_York --dry-run
+```
+
+Drop `--dry-run` to actually move them. Files whose names do not carry a
+`_YYYYMMDDTHHMMSSZ_<color>` stamp are left where they are.
 
 ## Error enrichment
 
@@ -58,7 +108,9 @@ python blunder_report.py --reports-dir reports --username <chesscom-user>
 
 The collator reads JSON sidecars when present and falls back to older Markdown
 reports. New columns are included when available, while older reports keep blank
-or `unmeasured` values for missing fields.
+or `unmeasured` values for missing fields. The scan is recursive, so the dated
+tree and any flat leftovers are both picked up, and the Report column links to
+each report relative to wherever `--out` was written.
 
 ## Puzzle classification, gates, and attempts
 
@@ -92,7 +144,7 @@ Puzzle prompt format is stored on each puzzle:
   prompt for the position before the played move.
 - `allowed_tactic`: `prompt_type: refutation`, with a prompt that includes the
   move played and asks what refutes it. These are deliberately not phrased as
-  “find the best move.”
+  "find the best move."
 
 Attempt schema:
 
@@ -131,6 +183,139 @@ The separate `Puzzle utilities` workflow is intentionally lightweight and does
 not run Stockfish. It supports:
 
 - `list`: run `scripts/render_puzzle_md.py` to render a chessboard and stored
-  prompt to `puzzle.md`.
+  prompt to `puzzle.md`, uncommitted, for reading in the run log.
+- `render`: write a committed card to
+  `rendered-puzzles/YYYY/MM/DD/<puzzle-id>.md`, dated by when the puzzle was
+  generated. Set `render_all_unrendered: true` to catch up every puzzle that
+  has no card yet; a card found at any depth counts as rendered, so cards
+  written before the tree existed are not duplicated.
 - `complete`: run `scripts/mark_puzzle_attempt.py` to append a completion
   attempt, mark the puzzle complete, and commit the updated puzzle file.
+
+Rendering is deliberately separate from submitting a move. Cards are for reading
+the position; lines get played out on your own analysis board.
+
+---
+
+# Running this yourself: fork setup
+
+Everything below is for someone who has forked the repo and wants it analyzing
+their own games. You do not need a local Python environment for any of it. The
+workflows install Stockfish and the dependencies on GitHub's runners.
+
+## 1. Fork and enable Actions
+
+1. Fork the repo.
+2. Open the **Actions** tab on your fork. GitHub disables workflows on new forks
+   until you confirm; click the button to enable them.
+3. Go to **Settings > Actions > General > Workflow permissions** and select
+   **Read and write permissions**. Every workflow here commits its output back
+   to the branch, and they will all fail at the push step without this. This is
+   the single most common reason a fresh fork does nothing.
+
+## 2. Point it at your account
+
+Two things carry a hardcoded default of `DanielKetterer`:
+
+- The `username` input on each workflow. You can type your own username at
+  dispatch time, but if you edit the `default:` value in the four files under
+  `.github/workflows/` you never have to think about it again.
+- The scheduled daily run, which has no dispatch input to override. Editing the
+  default in `daily-analyze.yml` is the only way to change that one.
+
+There is no API key and no secret to configure. The Chess.com public API needs
+no authentication.
+
+## 3. Set your timezone
+
+`analyze.yml` and `daily-analyze.yml` both take a `timezone` input, defaulting
+to `America/New_York`. It does two jobs: it decides which local day the daily
+run scans for new games, and it decides which `reports/YYYY/MM/DD` folder the
+reports land in.
+
+Set it to your own IANA zone (`Europe/London`, `Asia/Kolkata`, and so on) and
+keep the two workflows on the same value. If they disagree, the same game can
+be filed under two different days depending on which workflow analyzed it.
+
+The `schedule:` cron in `daily-analyze.yml` is separate and is always in UTC.
+`0 7 * * *` is 3am Eastern during daylight saving and 2am Eastern outside it.
+Adjust the hour for your own zone. GitHub also disables scheduled workflows on
+repos with no activity for 60 days, and the queue can run a scheduled job late
+under load, so treat the nightly run as reliable but not punctual.
+
+## 4. Clear out the previous owner's data
+
+A fresh fork inherits someone else's games. Before your first run:
+
+```bash
+git rm -r --cached reports rendered-puzzles
+rm -rf reports rendered-puzzles
+echo '[]' > puzzles.json
+git add -A && git commit -m "Reset analysis data" && git push
+```
+
+Leaving them in place is not harmful, but every report belongs to a different
+player, so the blunder report's trends will be someone else's until the old
+rows age out.
+
+## 5. Run it
+
+The four workflows, in the order you will meet them:
+
+| Workflow | Trigger | What it does | Runtime |
+|---|---|---|---|
+| `Analyze Chess Game` | manual | One game. Blank `game_id` means your latest. | 5 to 90 min |
+| `Analyze Daily Chess Games` | 3am cron, or manual | Every game from a local day that has no report yet | up to ~6 hr |
+| `Blunder Report` | automatic on any push to `reports/**` | Rebuilds `blunder_report.md`, the CSV, and the scatter | under a minute |
+| `Puzzle utilities` | manual | List, render, or complete a puzzle. No Stockfish. | under a minute |
+
+Start with `Analyze Chess Game` on a single game and leave `depth` at `24`. It
+confirms the whole chain works, including the commit-back, in one run.
+
+You do not need to run `Blunder Report` by hand. It fires whenever the analysis
+workflows push new reports.
+
+## 6. Cost and the depth dial
+
+Depth is the only knob that meaningfully changes runtime, and it is not linear.
+Every step up roughly doubles the search.
+
+- `10`: seconds per game. Use it to check that your fork is wired up.
+- `18`: a few minutes per game. Fine for volume.
+- `24`: the default, and where the reports were tuned. Tens of minutes per game
+  with `--findability honest`, which runs a separate search ladder per error.
+- `30`: hours. Only worth it for a single game you care about.
+
+Public repos get unlimited free Actions minutes; private forks bill against
+your plan's quota, where a nightly depth-24 run will consume it quickly. The
+jobs carry `timeout-minutes: 350`, just under GitHub's 6 hour ceiling, so a
+runaway analysis fails visibly instead of being killed mid-commit.
+
+## What each file does
+
+| File | Role |
+|---|---|
+| `chess_analyzer.py` | Fetches a game, runs Stockfish, writes the Markdown report, PNG graph, and JSON sidecar. Appends new puzzles. |
+| `unanalyzed_games.py` | Lists game IDs from a given local day that have no report in `reports/` yet. |
+| `blunder_report.py` | Collates every sidecar into `blunder_report.md`, `blunder_report.csv`, and the scatter image. |
+| `scripts/render_puzzle_md.py` | Renders one stored puzzle to a Markdown card with a board diagram. |
+| `scripts/mark_puzzle_attempt.py` | Appends an attempt to a puzzle and marks it complete. |
+| `migrate_report_tree.py` | One-off tidy-up for flat reports predating the dated tree. |
+
+`unanalyzed_games.py` scans `reports/` to decide what is already done, so it has
+to walk the tree recursively. If it ever starts re-analyzing your whole archive
+every night, that scan is the thing to check first.
+
+## Reading the output
+
+`blunder_report.md` at the repo root is the summary: a provenance line, a
+scatter image, and one row per error linking back to the report it came from.
+Individual game reports under `reports/YYYY/MM/DD/` are the coaching prose, one
+per color, with an evaluation graph beside them.
+
+The Depth column is the one worth understanding. An integer is a measured
+depth-to-find. `<=floor` means the engine already preferred the better move at
+the shallowest depth this measurement resolves, so the error was findable and
+the number would be noise. `>cap` means it never settled inside the analysis
+depth. `unmeasured` means the measurement was invalid; the row is kept but left
+out of the depth bins.
