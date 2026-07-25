@@ -18,7 +18,13 @@
     "eval_before": "-1.71",
     "pre_error_bucket": "winning",
     "sacrifice": null,
-    "attempts": [],
+    "attempts": [
+      {
+        "timestamp": "2026-07-25T11:04:44+00:00",
+        "found": true,
+        "move": "e7d8"
+      }
+    ],
     "source_game": "https://www.chess.com/game/live/171926193190",
     "move_number": 13,
     "date_generated": "2026-07-25T11:02:10Z"
