@@ -1,0 +1,173 @@
+{
+  "schema_version": 2,
+  "game_id": "3f45c3e7-8958-11f1-bd1d-370ea001000f",
+  "game_date": "2026.07.27",
+  "game_url": "https://www.chess.com/game/live/172127911816",
+  "white": "saharatef",
+  "black": "DanielKetterer",
+  "time_class": "rapid",
+  "player_color": "black",
+  "analysis": {
+    "depth": 24,
+    "multipv": 3,
+    "findability": "honest",
+    "measurement_floor": 6,
+    "stable_run": 3,
+    "refute_threshold_rule": {
+      "floor_wp": 5.0,
+      "fraction_of_wp_loss": 0.6
+    },
+    "refute_depth_cap": 18,
+    "sacrifice_gates": {
+      "exchange_trough_pawns": 1.5,
+      "piece_trough_pawns": 3.0,
+      "recovery_tolerance_pawns": 0.5,
+      "min_pv_plies": 6,
+      "pre_eval_band_cp": [
+        -200,
+        300
+      ],
+      "min_ply": 21
+    },
+    "attention_requires": {
+      "refute_depth_max": 2,
+      "findable": "obvious"
+    },
+    "puzzle_gates": {
+      "categories": [
+        "brilliant_sacrifice",
+        "missed_tactic",
+        "allowed_tactic",
+        "endgame"
+      ],
+      "refute_min": 3,
+      "refute_max": 8,
+      "wp_gap_min": 5.0
+    },
+    "censored_low": "<=floor",
+    "censored_high": ">cap",
+    "engine": "stockfish",
+    "engine_id": "Stockfish 18",
+    "threads": 1,
+    "hash_mb": 256,
+    "deterministic": true,
+    "generated_utc": "2026-07-27T03:51:53Z"
+  },
+  "puzzle_gate_tally": {
+    "wp_gap_too_small": 1,
+    "category:attention": 1,
+    "category:positional": 1
+  },
+  "metrics": {
+    "player_moves": 11,
+    "attention_errors": 1,
+    "attention_errors_per_100_moves": 9.09
+  },
+  "errors": [
+    {
+      "ply": 12,
+      "move_number": 6,
+      "color": "black",
+      "san": "Be6",
+      "move_label": "6...Be6",
+      "classification": "inaccuracy",
+      "error_type": "positional",
+      "error_category": "allowed_tactic",
+      "wp_loss": 6.16,
+      "cp_loss": 67,
+      "depth_to_find": "<=floor",
+      "refute_depth": 4,
+      "refute_threshold_wp": 5.0,
+      "refutation": "c4e6",
+      "sacrifice": {
+        "trough_pawns": -3,
+        "final_pawns": 0,
+        "trough_ply": 11,
+        "pv_plies": 23,
+        "size": "piece",
+        "quiet": false,
+        "mates": false,
+        "recovered": true,
+        "kind": "sham",
+        "desperado": false,
+        "rejected": "opening_ply"
+      },
+      "puzzle_reject": "wp_gap_too_small",
+      "findable": "obvious",
+      "seconds_spent": 12.1,
+      "pre_error_eval": "-0.27",
+      "pre_error_bucket": "balanced",
+      "fen_before": "rnbq1rk1/ppp2ppp/3p1n2/2b1p3/2B1P3/2NPB2P/PPP2PP1/R2QK1NR b KQ - 1 6",
+      "uci": "c8e6",
+      "best_move_san": "Bxe3",
+      "best_move_uci": "c5e3",
+      "best_second_wp_gap": 2.02
+    },
+    {
+      "ply": 14,
+      "move_number": 7,
+      "color": "black",
+      "san": "c6",
+      "move_label": "7...c6",
+      "classification": "mistake",
+      "error_type": "tactical",
+      "error_category": "attention",
+      "wp_loss": 10.15,
+      "cp_loss": 111,
+      "depth_to_find": "<=floor",
+      "refute_depth": 1,
+      "refute_threshold_wp": 6.09,
+      "refutation": null,
+      "sacrifice": {
+        "trough_pawns": -3,
+        "final_pawns": 1,
+        "trough_ply": 3,
+        "pv_plies": 27,
+        "size": "piece",
+        "quiet": false,
+        "mates": false,
+        "recovered": true,
+        "kind": "sham",
+        "desperado": false,
+        "rejected": "opening_ply"
+      },
+      "puzzle_reject": "category:attention",
+      "findable": "obvious",
+      "seconds_spent": 59.8,
+      "pre_error_eval": "-0.86",
+      "pre_error_bucket": "balanced",
+      "fen_before": "rn1q1rk1/ppp2ppp/3pbn2/2bNp3/2B1P3/3PB2P/PPP2PP1/R2QK1NR b KQ - 3 7",
+      "uci": "c7c6",
+      "best_move_san": "Bxd5",
+      "best_move_uci": "e6d5",
+      "best_second_wp_gap": 1.53
+    },
+    {
+      "ply": 22,
+      "move_number": 11,
+      "color": "black",
+      "san": "f5",
+      "move_label": "11...f5",
+      "classification": "inaccuracy",
+      "error_type": "positional",
+      "error_category": "positional",
+      "wp_loss": 5.69,
+      "cp_loss": 62,
+      "depth_to_find": ">cap",
+      "refute_depth": 5,
+      "refute_threshold_wp": 5.0,
+      "refutation": null,
+      "sacrifice": null,
+      "puzzle_reject": "category:positional",
+      "findable": "beyond analysis depth",
+      "seconds_spent": 6.0,
+      "pre_error_eval": "-0.03",
+      "pre_error_bucket": "balanced",
+      "fen_before": "rn3rk1/pp3ppp/2p1q3/2p1p3/4P3/3P1N1P/PPP2PP1/R2QK2R b KQ - 1 11",
+      "uci": "f7f5",
+      "best_move_san": "a5",
+      "best_move_uci": "a7a5",
+      "best_second_wp_gap": 0.09
+    }
+  ]
+}
