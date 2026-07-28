@@ -1,6 +1,6 @@
 # Blunder Report
 
-REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  27 games  |  185 errors  |  latest run 2026-07-28T13:26:07Z
+REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  28 games  |  199 errors  |  latest run 2026-07-28T13:26:07Z
 
 Depth column: an integer is a measured depth. `<=floor` means the engine stably preferred the move at or below depth 6, which is as shallow as this measurement resolves. `>cap` means it never settled within depth 24. `unmeasured` means the measurement was invalid and the row is kept but not binned.
 
@@ -189,7 +189,21 @@ Depth column: an integer is a measured depth. `<=floor` means the engine stably 
 | 25 | ec2c3458-89bd-11f1-a79f-19975b01000f | 2026.07.27 | 15...Rhg8 | mistake | attention | 11.8 | <=floor | 2 | 7.3 | winning | [172148616170_20260727T133725Z_black.md](reports/2026/07/27/172148616170_20260727T133725Z_black.md) |
 | 25 | ec2c3458-89bd-11f1-a79f-19975b01000f | 2026.07.27 | 19...Rg1+ | blunder | missed_tactic | 81.6 | 16 | 12 | 28.8 | winning | [172148616170_20260727T133725Z_black.md](reports/2026/07/27/172148616170_20260727T133725Z_black.md) |
 | 25 | ec2c3458-89bd-11f1-a79f-19975b01000f | 2026.07.27 | 21...exf5 | blunder | attention | 25.8 | <=floor | 1 | 36.0 | losing | [172148616170_20260727T133725Z_black.md](reports/2026/07/27/172148616170_20260727T133725Z_black.md) |
-| 26 | beb9c7fa-8a7c-11f1-b685-56aa3b01000f | 2026.07.28 | 8.Nd5 | inaccuracy | opening | 6.4 | >cap | 9 | 50.5 | balanced | [172192767808_20260728T123412Z_white.md](reports/2026/07/28/172192767808_20260728T123412Z_white.md) |
-| 26 | beb9c7fa-8a7c-11f1-b685-56aa3b01000f | 2026.07.28 | 23.g4 | mistake | attention | 12.8 | <=floor | 1 | 80.4 | winning | [172192767808_20260728T123412Z_white.md](reports/2026/07/28/172192767808_20260728T123412Z_white.md) |
-| 26 | beb9c7fa-8a7c-11f1-b685-56aa3b01000f | 2026.07.28 | 26.Qd3 | inaccuracy | attention | 6.9 | <=floor | 1 | 32.7 | winning | [172192767808_20260728T123412Z_white.md](reports/2026/07/28/172192767808_20260728T123412Z_white.md) |
-| 26 | beb9c7fa-8a7c-11f1-b685-56aa3b01000f | 2026.07.28 | 27.Qc3 | blunder | attention | 61.3 | <=floor | 2 | 133.3 | winning | [172192767808_20260728T123412Z_white.md](reports/2026/07/28/172192767808_20260728T123412Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 3.Bc4 | inaccuracy | opening | 8.9 | 18 | 1 | 37.4 | balanced | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 15.g4 | inaccuracy | positional | 8.5 | <=floor | 3 | 17.5 | winning | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 17.Ne5+ | mistake | brilliant_sacrifice | 11.5 | >cap | 1 | 14.4 | winning | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 19.Rfe1 | inaccuracy | allowed_tactic | 7.4 | 12 | 1 | 39.9 | balanced | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 23.f3 | blunder | allowed_tactic | 24.2 | 19 | 16 | 64.8 | winning | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 24.h4 | mistake | attention | 17.0 | <=floor | 1 | 11.4 | winning | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 25.hxg5 | blunder | missed_tactic | 30.1 | <=floor | 3 | 2.1 | winning | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 27.f4 | mistake | attention | 11.2 | <=floor | 1 | 10.2 | winning | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 29.Nd5 | blunder | missed_tactic | 32.6 | <=floor | 10 | 26.4 | winning | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 31.Ke4 | inaccuracy | attention | 9.1 | <=floor | 2 | 13.8 | balanced | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 34.dxe5 | mistake | missed_tactic | 18.1 | <=floor | 5 | 0.5 | balanced | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 35.e6 | inaccuracy | attention | 5.8 | <=floor | 1 | 2.9 | losing | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 38.Rd1 | mistake | attention | 16.4 | <=floor | 1 | 13.7 | losing | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 26 | 8dbd9e9a-8aa4-11f1-a04b-79503601000f | 2026.07.28 | 40.Rd2 | blunder | missed_tactic | 67.9 | <=floor | 5 | 1.1 | winning | [172204968774_20260728T171409Z_white.md](reports/2026/07/28/172204968774_20260728T171409Z_white.md) |
+| 27 | beb9c7fa-8a7c-11f1-b685-56aa3b01000f | 2026.07.28 | 8.Nd5 | inaccuracy | opening | 6.4 | >cap | 9 | 50.5 | balanced | [172192767808_20260728T123412Z_white.md](reports/2026/07/28/172192767808_20260728T123412Z_white.md) |
+| 27 | beb9c7fa-8a7c-11f1-b685-56aa3b01000f | 2026.07.28 | 23.g4 | mistake | attention | 12.8 | <=floor | 1 | 80.4 | winning | [172192767808_20260728T123412Z_white.md](reports/2026/07/28/172192767808_20260728T123412Z_white.md) |
+| 27 | beb9c7fa-8a7c-11f1-b685-56aa3b01000f | 2026.07.28 | 26.Qd3 | inaccuracy | attention | 6.9 | <=floor | 1 | 32.7 | winning | [172192767808_20260728T123412Z_white.md](reports/2026/07/28/172192767808_20260728T123412Z_white.md) |
+| 27 | beb9c7fa-8a7c-11f1-b685-56aa3b01000f | 2026.07.28 | 27.Qc3 | blunder | attention | 61.3 | <=floor | 2 | 133.3 | winning | [172192767808_20260728T123412Z_white.md](reports/2026/07/28/172192767808_20260728T123412Z_white.md) |
