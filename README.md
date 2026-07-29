@@ -248,9 +248,9 @@ has `found: true`. Failed attempts remain useful for review scheduling, and a
 successful puzzle is offered again after progressively longer intervals rather
 than being permanently removed from the queue.
 
-Attention errors are written to sidecar `metrics` as `attention_errors`,
-`player_moves`, and `attention_errors_per_100_moves`. `blunder_report.py` plots
-that per-100-moves series over time.
+Attention errors and both players' game accuracy are written to sidecar
+`metrics`. `blunder_report.py` plots the per-100-moves attention series over
+time, as well as your accuracy in red and your opponents' accuracy in blue.
 
 ## GitHub Action puzzle tools
 
