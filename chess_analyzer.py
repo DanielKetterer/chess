@@ -2038,6 +2038,9 @@ def write_sidecar(path, meta, moves, player_color, analysis_params,
         "puzzle_gate_tally": puzzle_tally or {},
         "metrics": {
             "player_moves": sum(1 for m in moves if m.color == player_color),
+            "player_accuracy": round(game_accuracy(moves, player_color), 1),
+            "opponent_accuracy": round(game_accuracy(
+                moves, "black" if player_color == "white" else "white"), 1),
             "attention_errors": sum(1 for m in moves if m.color == player_color and m.error_category == "attention"),
             "attention_errors_per_100_moves": round(
                 100 * sum(1 for m in moves if m.color == player_color and m.error_category == "attention") /

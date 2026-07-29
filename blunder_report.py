@@ -78,6 +78,9 @@ TITLE_RE = re.compile(
 YOU_PLAYED_RE = re.compile(r"You played:\s*(white|black)", re.IGNORECASE)
 PROVENANCE_RE = re.compile(
     r"^Analysis:\s*(?P<kv>.+)$", re.MULTILINE)
+ACCURACY_RE = re.compile(
+    r"Lichess accuracy:\s*you\s*(?P<player>[\d.]+)%,\s*"
+    r"opponent\s*(?P<opponent>[\d.]+)%", re.IGNORECASE)
 
 
 @dataclass
@@ -246,6 +249,12 @@ def parse_markdown_report(path, username):
             "pre_error_bucket": table_row.get("pre_error_bucket", ""),
         })
     rec.provenance = parse_provenance(text)
+    accuracy = ACCURACY_RE.search(text)
+    if accuracy:
+        rec.metrics.update({
+            "player_accuracy": float(accuracy.group("player")),
+            "opponent_accuracy": float(accuracy.group("opponent")),
+        })
     return rec
 
 
@@ -271,6 +280,19 @@ def parse_sidecar(path, username):
             "pre_error_bucket": e.get("pre_error_bucket", ""),
         })
     rec.metrics = data.get("metrics", {}) or {}
+    # Accuracy was added to sidecars after it was already present in the
+    # human-readable report. Backfill old sidecars from their paired Markdown
+    # so the historical series starts with the first analyzed game.
+    if "player_accuracy" not in rec.metrics:
+        markdown_path = path.with_suffix(".md")
+        if markdown_path.exists():
+            accuracy = ACCURACY_RE.search(
+                markdown_path.read_text(encoding="utf-8"))
+            if accuracy:
+                rec.metrics.update({
+                    "player_accuracy": float(accuracy.group("player")),
+                    "opponent_accuracy": float(accuracy.group("opponent")),
+                })
     rec.provenance = data.get("analysis", {})
     return rec
 
@@ -335,7 +357,9 @@ def rolling(values, window=10):
 # Rendering
 # ---------------------------------------------------------------------------
 
-def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=0, attention_rates=None):
+def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=0,
+                   attention_rates=None, player_accuracies=None,
+                   opponent_accuracies=None):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -359,11 +383,11 @@ def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=0, att
             first_serious[r.game_index] = (
                 r.move_number if cur is None else min(cur, r.move_number))
 
-    fig = plt.figure(figsize=(15, 11))
+    fig = plt.figure(figsize=(15, 12.5))
     # Reserve the right margin explicitly. bbox_inches="tight" does not
     # reliably include legends anchored outside the axes, which is why the
     # depth legend was rendering clipped.
-    gs = fig.add_gridspec(5, 1, height_ratios=[3, 1, 1, 1, 1], hspace=0.48,
+    gs = fig.add_gridspec(6, 1, height_ratios=[3, 1, 1, 1, 1, 1], hspace=0.52,
                           left=0.07, right=0.76, top=0.93, bottom=0.07)
     ax = fig.add_subplot(gs[0])
 
@@ -447,7 +471,23 @@ def render_scatter(rows, n_games, path, floor, cap, provenance, min_games=0, att
     ax_att.grid(alpha=0.18, zorder=0)
     ax_att.set_title("attention errors per 100 moves, 10-game rolling mean in red", fontsize=9, loc="left")
 
-    ax4 = fig.add_subplot(gs[4])
+    ax_acc = fig.add_subplot(gs[4], sharex=ax)
+    player_acc = player_accuracies or [None] * n_games
+    opponent_acc = opponent_accuracies or [None] * n_games
+    ax_acc.plot(x, [np.nan if v is None else v for v in player_acc],
+                color="#d1495b", marker="o", markersize=3, lw=2.0,
+                label="you", zorder=3)
+    ax_acc.plot(x, [np.nan if v is None else v for v in opponent_acc],
+                color="#30638e", marker="o", markersize=3, lw=2.0,
+                label="opponent", zorder=3)
+    ax_acc.set_ylim(0, 100)
+    ax_acc.set_ylabel("accuracy\n(%)", fontsize=9)
+    ax_acc.grid(alpha=0.18, zorder=0)
+    ax_acc.legend(fontsize=7, frameon=False, loc="lower right", ncol=2)
+    ax_acc.set_title("Lichess game accuracy: you in red, opponents in blue",
+                     fontsize=9, loc="left")
+
+    ax4 = fig.add_subplot(gs[5])
     timed = [r for r in rows if r.seconds_spent not in (None, "")]
     if timed:
         ax4.scatter([float(r.seconds_spent) for r in timed], [r.wp_loss for r in timed],
@@ -588,14 +628,18 @@ def main():
         prov.get("depth", DEFAULT_CAP))
 
     attention_rates = [0.0] * n_games
+    player_accuracies = [None] * n_games
+    opponent_accuracies = [None] * n_games
     rows = []
     for rec in records:
         idx = game_order[rec.game_id]
-        if rec.metrics:
+        if "attention_errors_per_100_moves" in rec.metrics:
             attention_rates[idx] = float(rec.metrics.get("attention_errors_per_100_moves", 0.0) or 0.0)
         else:
             player_moves = max(1, len(rec.rows))
             attention_rates[idx] = 100 * sum(1 for row in rec.rows if row.get("error_category") == "attention") / player_moves
+        player_accuracies[idx] = rec.metrics.get("player_accuracy")
+        opponent_accuracies[idx] = rec.metrics.get("opponent_accuracy")
         for r in rec.rows:
             rows.append(ErrorRow(
                 game_index=game_order[rec.game_id],
@@ -610,11 +654,14 @@ def main():
         writer.writeheader()
         writer.writerows([row.__dict__ for row in rows])
 
-    image_path = args.graph if rows else ""
-    if rows:
+    image_path = args.graph
+    if records:
         try:
             render_scatter(rows, n_games, args.graph, floor, cap, prov,
-                           min_games=args.min_games_axis, attention_rates=attention_rates)
+                           min_games=args.min_games_axis,
+                           attention_rates=attention_rates,
+                           player_accuracies=player_accuracies,
+                           opponent_accuracies=opponent_accuracies)
         except ImportError as exc:
             print(f"Could not render scatter plot: {exc}")
             image_path = ""
