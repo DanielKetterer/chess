@@ -309,6 +309,8 @@ out of the depth bins.
 
 ## Opening Grove (GitHub Pages)
 
+https://danielketterer.github.io/chess/
+
 The interactive opening explorer lives in `docs/` and is ready to publish with
 GitHub Pages (Settings → Pages → deploy from the branch's `/docs` folder). It
 combines the repository's report archive with the bundled ECO tables, keeps
