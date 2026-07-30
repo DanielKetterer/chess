@@ -104,6 +104,27 @@ def probability(cp):
     return round(100 / (1 + math.exp(-0.00368208 * value * 100)), 1)
 
 
+def game_result(final_eval):
+    """White's result (1 win, 0.5 draw, 0 loss) inferred from the final analyzed eval.
+
+    Exact when the game ended in mate; otherwise the sign of a decisive evaluation.
+    chess.com does not record the termination in these reports, so games that ended
+    near equality (resignation/timeout/agreement) are treated as draws.
+    """
+    text = final_eval.strip()
+    if "M" in text.upper():
+        return 0.0 if text.startswith("-") else 1.0
+    try:
+        cp = float(text)
+    except ValueError:
+        return 0.5
+    if cp >= 1.5:
+        return 1.0
+    if cp <= -1.5:
+        return 0.0
+    return 0.5
+
+
 def build():
     theory, opening_names = theory_prefixes(); games = []
     for path in sorted((ROOT / "reports").rglob("*_white.md")):
@@ -133,7 +154,8 @@ def build():
             if key not in theory: break
         if positions and not failed:
             games.append({"id": game_id.group(1), "date": date.group(1).replace(".", "-"),
-                          "white": header.group(1), "black": header.group(2), "moves": positions})
+                          "white": header.group(1), "black": header.group(2),
+                          "result": game_result(rows[-1][1]), "moves": positions})
     return {"generatedFrom": "reports/**/*.md", "games": games}
 
 
