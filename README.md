@@ -1,5 +1,20 @@
 # Chess analysis pipeline ♟️
 
+## Opening Grove (GitHub Pages)
+
+The interactive opening explorer lives in `docs/` and is ready to publish with
+GitHub Pages (Settings → Pages → deploy from the branch's `/docs` folder). It
+combines the repository's report archive with the bundled ECO tables, keeps
+only book moves plus each game's first deviation, and supports color/date
+filters, collapsible branches, constrained board moves, and continuation
+arrows.
+
+Regenerate its committed data after reports change:
+
+```bash
+python scripts/build_opening_explorer.py
+```
+
 
 This repo analyzes Chess.com games with Stockfish 18, writes a coaching report for each game, collates historical data into an error tracker, and attempts to mine from game positions 'puzzles' defined below in the 'Puzzle classification, gates, and attempts' section.
 
