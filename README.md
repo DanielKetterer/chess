@@ -1,21 +1,5 @@
 # Chess analysis pipeline ♟️
 
-## Opening Grove (GitHub Pages)
-
-The interactive opening explorer lives in `docs/` and is ready to publish with
-GitHub Pages (Settings → Pages → deploy from the branch's `/docs` folder). It
-combines the repository's report archive with the bundled ECO tables, keeps
-only book moves plus each game's first deviation, and supports color/date
-filters, collapsible branches, constrained board moves, and continuation
-arrows.
-
-Regenerate its committed data after reports change:
-
-```bash
-python scripts/build_opening_explorer.py
-```
-
-
 This repo analyzes Chess.com games with Stockfish 18, writes a coaching report for each game, collates historical data into an error tracker, and attempts to mine from game positions 'puzzles' defined below in the 'Puzzle classification, gates, and attempts' section.
 
 
@@ -322,3 +306,20 @@ the shallowest depth this measurement resolves, so the error was findable and
 the number would be noise. `>cap` means it never settled inside the analysis
 depth. `unmeasured` means the measurement was invalid; the row is kept but left
 out of the depth bins.
+
+## Opening Grove (GitHub Pages)
+
+The interactive opening explorer lives in `docs/` and is ready to publish with
+GitHub Pages (Settings → Pages → deploy from the branch's `/docs` folder). It
+combines the repository's report archive with the bundled ECO tables, keeps
+only book moves plus each game's first deviation, and supports color/date
+filters, collapsible branches, constrained board moves, and continuation
+arrows.
+
+The `Refresh opening explorer` workflow regenerates and commits the dataset
+whenever reports, the ECO tables, or the builder change. It can also be run
+manually from the Actions tab. To rebuild it locally, run:
+
+```bash
+python scripts/build_opening_explorer.py
+```

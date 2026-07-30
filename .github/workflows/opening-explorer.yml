@@ -1,0 +1,54 @@
+name: Refresh opening explorer
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "reports/**"
+      - "[a-e].tsv"
+      - "scripts/build_opening_explorer.py"
+      - ".github/workflows/opening-explorer.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: opening-explorer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Rebuild Pages dataset
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Rebuild explorer data
+        run: python scripts/build_opening_explorer.py
+
+      - name: Commit refreshed dataset
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/openings-data.js
+
+          if git diff --cached --quiet; then
+            echo "Opening explorer data is already current."
+            exit 0
+          fi
+
+          git commit -m "Refresh opening explorer data"
+          git pull --rebase -X theirs origin "$BRANCH_NAME"
+          git push origin "HEAD:$BRANCH_NAME"
