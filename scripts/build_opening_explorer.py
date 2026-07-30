@@ -127,7 +127,7 @@ def build():
             try: uci = apply_san(board, san, ply % 2 == 1)
             except ValueError: failed = True; break
             sans.append(san); key = " ".join(sans)
-            positions.append({"san": san, "uci": uci, "board": board, "turn": "black" if ply % 2 else "white",
+            positions.append({"san": san, "uci": uci, "board": dict(board), "turn": "black" if ply % 2 else "white",
                               "whiteWin": probability(eval_after), "book": key in theory,
                               "opening": opening_names.get(key)})
             if key not in theory: break
