@@ -60,7 +60,7 @@ def apply_san(board, san, white):
             continue
         sf, sr = ord(source[0]), int(source[1]); df, dr = abs(tf-sf), abs(tr-sr)
         ok = ((piece == "P" and df == 0 and target not in board and dr in (1, 2)) or
-              (piece == "P" and df == 1 and dr == 1) or
+              (piece == "P" and df == 1 and dr == 1 and (target in board or hint)) or
               (piece == "N" and (df, dr) in ((1, 2), (2, 1))) or
               (piece == "B" and df == dr and path_clear(board, source, target)) or
               (piece == "R" and (df == 0 or dr == 0) and path_clear(board, source, target)) or
