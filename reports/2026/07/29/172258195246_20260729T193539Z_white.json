@@ -1,0 +1,135 @@
+{
+  "schema_version": 2,
+  "game_id": "710e38d7-8b83-11f1-87d4-59424301000f",
+  "game_date": "2026.07.29",
+  "game_url": "https://www.chess.com/game/live/172258195246",
+  "white": "DanielKetterer",
+  "black": "Pastordeme",
+  "time_class": "rapid",
+  "player_color": "white",
+  "analysis": {
+    "depth": 24,
+    "multipv": 3,
+    "findability": "honest",
+    "measurement_floor": 6,
+    "stable_run": 3,
+    "refute_threshold_rule": {
+      "floor_wp": 5.0,
+      "fraction_of_wp_loss": 0.6
+    },
+    "refute_depth_cap": 18,
+    "sacrifice_gates": {
+      "exchange_trough_pawns": 1.5,
+      "piece_trough_pawns": 3.0,
+      "recovery_tolerance_pawns": 0.5,
+      "min_pv_plies": 6,
+      "pre_eval_band_cp": [
+        -200,
+        300
+      ],
+      "min_ply": 21
+    },
+    "attention_requires": {
+      "refute_depth_max": 2,
+      "findable": "obvious"
+    },
+    "puzzle_gates": {
+      "categories": [
+        "brilliant_sacrifice",
+        "missed_tactic",
+        "allowed_tactic",
+        "endgame"
+      ],
+      "refute_min": 3,
+      "refute_max": 8,
+      "wp_gap_min": 5.0
+    },
+    "censored_low": "<=floor",
+    "censored_high": ">cap",
+    "engine": "stockfish",
+    "engine_id": "Stockfish 18",
+    "threads": 1,
+    "hash_mb": 256,
+    "deterministic": true,
+    "generated_utc": "2026-07-30T09:53:35Z"
+  },
+  "puzzle_gate_tally": {
+    "category:opening": 1,
+    "accepted": 1
+  },
+  "metrics": {
+    "player_moves": 12,
+    "player_accuracy": 69.1,
+    "opponent_accuracy": 60.3,
+    "attention_errors": 0,
+    "attention_errors_per_100_moves": 0.0
+  },
+  "errors": [
+    {
+      "ply": 13,
+      "move_number": 7,
+      "color": "white",
+      "san": "Bf4",
+      "move_label": "7.Bf4",
+      "classification": "mistake",
+      "error_type": "tactical",
+      "error_category": "opening",
+      "wp_loss": 12.63,
+      "cp_loss": 141,
+      "depth_to_find": 7,
+      "refute_depth": 8,
+      "refute_threshold_wp": 7.58,
+      "refutation": null,
+      "sacrifice": null,
+      "puzzle_reject": "category:opening",
+      "findable": "moderate",
+      "seconds_spent": 39.4,
+      "pre_error_eval": "+1.52",
+      "pre_error_bucket": "balanced",
+      "fen_before": "r1b1kb1r/ppppqppp/n4n2/3PN3/4P3/2P5/PP3PPP/RNBQKB1R w KQkq - 1 7",
+      "uci": "c1f4",
+      "best_move_san": "Qd4",
+      "best_move_uci": "d1d4",
+      "best_second_wp_gap": 3.03
+    },
+    {
+      "ply": 15,
+      "move_number": 8,
+      "color": "white",
+      "san": "Nf3",
+      "move_label": "8.Nf3",
+      "classification": "blunder",
+      "error_type": "tactical",
+      "error_category": "missed_tactic",
+      "wp_loss": 23.44,
+      "cp_loss": 260,
+      "depth_to_find": "<=floor",
+      "refute_depth": 4,
+      "refute_threshold_wp": 14.06,
+      "refutation": null,
+      "sacrifice": {
+        "trough_pawns": -3,
+        "final_pawns": 0,
+        "trough_ply": 17,
+        "pv_plies": 27,
+        "size": "piece",
+        "quiet": false,
+        "mates": false,
+        "recovered": true,
+        "kind": "sham",
+        "desperado": false,
+        "rejected": "opening_ply"
+      },
+      "puzzle_reject": null,
+      "findable": "obvious",
+      "seconds_spent": 105.8,
+      "pre_error_eval": "+1.55",
+      "pre_error_bucket": "balanced",
+      "fen_before": "r1b1kb1r/ppp1qppp/n2p1n2/3PN3/4PB2/2P5/PP3PPP/RN1QKB1R w KQkq - 0 8",
+      "uci": "e5f3",
+      "best_move_san": "Bxa6",
+      "best_move_uci": "f1a6",
+      "best_second_wp_gap": 9.85
+    }
+  ]
+}
