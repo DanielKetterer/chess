@@ -1327,5 +1327,29 @@
     "source_game": "https://www.chess.com/game/live/172311344620",
     "move_number": 8,
     "date_generated": "2026-07-31T00:52:38Z"
+  },
+  {
+    "id": "pb2582cbdb6",
+    "fen_before": "r3r1k1/pp3np1/2p4p/4PR2/8/8/PqP1Q1PP/3R2K1 w - - 0 23",
+    "move_played": "e2h5",
+    "move_played_san": "Qh5",
+    "best_move": "f5f7",
+    "best_move_san": "Rxf7",
+    "refutation": null,
+    "refutation_san": null,
+    "puzzle_type": "missed_tactic",
+    "category": "missed_tactic",
+    "prompt_type": "best_move",
+    "prompt": "Find the best move in this position.",
+    "best_second_wp_gap": 18.63,
+    "refute_depth": 5,
+    "wp_loss": 27.5,
+    "eval_before": "-0.96",
+    "pre_error_bucket": "balanced",
+    "sacrifice": null,
+    "attempts": [],
+    "source_game": "https://www.chess.com/game/live/171750428224",
+    "move_number": 23,
+    "date_generated": "2026-07-31T05:02:52Z"
   }
 ]
