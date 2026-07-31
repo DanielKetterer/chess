@@ -31,17 +31,28 @@ on:
       attempted_move:
         description: Optional attempted move for complete mode
         required: false
+  push:
+    paths:
+      - "puzzles.json"
+      - "scripts/render_puzzle_md.py"
+      - ".github/workflows/puzzles.yml"
+  # Analyzer commits use GITHUB_TOKEN, whose pushes cannot start another
+  # workflow. Follow successful analyzer runs so their new puzzles render too.
+  workflow_run:
+    workflows: ["Analyze Chess Game", "Analyze Daily Chess Games"]
+    types: [completed]
 
 permissions:
   contents: write
 
 jobs:
   puzzle-utilities:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.event.workflow_run.head_branch || github.ref_name }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -51,13 +62,13 @@ jobs:
           python -m pip install python-chess
       - name: Run selected puzzle utility
         env:
-          MODE: ${{ inputs.mode }}
-          PUZZLES_FILE: ${{ inputs.puzzles_file }}
+          MODE: ${{ inputs.mode || 'render' }}
+          PUZZLES_FILE: ${{ inputs.puzzles_file || 'puzzles.json' }}
           PUZZLE_SELECTOR: ${{ inputs.puzzle_selector }}
           FEN: ${{ inputs.fen }}
           ATTEMPTED_MOVE: ${{ inputs.attempted_move }}
-          RENDER_ALL_UNRENDERED: ${{ inputs.render_all_unrendered }}
-          RENDER_DIR: ${{ inputs.render_dir }}
+          RENDER_ALL_UNRENDERED: ${{ github.event_name != 'workflow_dispatch' || inputs.render_all_unrendered }}
+          RENDER_DIR: ${{ inputs.render_dir || 'rendered-puzzles' }}
         run: |
           set -euo pipefail
           case "$MODE" in
@@ -152,22 +163,25 @@ jobs:
               ;;
           esac
       - name: Commit puzzle updates
-        if: ${{ inputs.mode == 'complete' || inputs.mode == 'render' }}
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.mode == 'complete' || inputs.mode == 'render' }}
         env:
-          BRANCH_NAME: ${{ github.ref_name }}
+          BRANCH_NAME: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+          MODE: ${{ inputs.mode || 'render' }}
+          PUZZLES_FILE: ${{ inputs.puzzles_file || 'puzzles.json' }}
+          RENDER_DIR: ${{ inputs.render_dir || 'rendered-puzzles' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ "${{ inputs.mode }}" = "complete" ]; then
-            git add "${{ inputs.puzzles_file }}"
+          if [ "$MODE" = "complete" ]; then
+            git add "$PUZZLES_FILE"
           else
-            git add "${{ inputs.render_dir }}"
+            git add "$RENDER_DIR"
           fi
           if git diff --cached --quiet; then
             echo "Puzzle file has not changed."
             exit 0
           fi
-          if [ "${{ inputs.mode }}" = "complete" ]; then
+          if [ "$MODE" = "complete" ]; then
             git commit -m "Mark chess puzzle completed"
           else
             git commit -m "Render chess puzzle cards"

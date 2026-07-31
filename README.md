@@ -52,14 +52,15 @@ The four workflows, in the order you will meet them:
 |---|---|---|---|
 | `Analyze Chess Game` | manual | One game. Blank `game_id` means your latest. | 10 to 45 min |
 | `Analyze Daily Chess Games` | 3am cron, or manual | Every game from a local day that has no report yet | ~depends on volume |
-| `Blunder Report` | automatic on any push to `reports/**` | Rebuilds `blunder_report.md`, the CSV, and the scatter | under a minute |
-| `Puzzle utilities` | manual | List, render, or complete a puzzle. No Stockfish. | under a minute |
+| `Blunder Report` | automatic after analysis or on any push to `reports/**` | Rebuilds `blunder_report.md`, the CSV, and the scatter | under a minute |
+| `Puzzle utilities` | automatic after analysis or a `puzzles.json` push; manual for interactive modes | Renders new cards, or manually lists, renders, and completes puzzles. No Stockfish. | under a minute |
 
 Start with `Analyze Chess Game` on a single game and leave `depth` at `24`. It
 confirms the whole chain works, including the commit-back, in one run.
 
-You do not need to run `Blunder Report` by hand. It fires whenever the analysis
-workflows push new reports.
+You do not need to run `Blunder Report` by hand. It follows successful analysis
+runs directly (GitHub does not fan out workflows from pushes made with the
+built-in Actions token) and also fires for ordinary pushes under `reports/`.
 
 ### 5. Cost and the depth dial
 
@@ -259,7 +260,9 @@ pass `--puzzles-file puzzles.json`, commit the updated puzzle file, and keep the
 JSON sidecars alongside the Markdown reports for later trend reporting.
 
 The separate `Puzzle utilities` workflow is intentionally lightweight and does
-not run Stockfish. It supports:
+not run Stockfish. A successful analysis run or an ordinary push that changes
+`puzzles.json` automatically renders every puzzle without a card. Manual runs
+additionally support:
 
 - `list`: run `scripts/render_puzzle_md.py` to render a chessboard and stored
   prompt to `puzzle.md`, uncommitted, for reading in the run log.
