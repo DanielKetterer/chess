@@ -1,0 +1,41 @@
+name: Refresh puzzle trainer
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "puzzles.json"
+      - "scripts/build_puzzle_dataset.py"
+      - ".github/workflows/puzzle-dataset.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: puzzle-trainer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Rebuild puzzle data
+        run: python scripts/build_puzzle_dataset.py
+      - name: Commit refreshed dataset
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/puzzles-data.js
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Refresh puzzle trainer data"
+          git pull --rebase -X theirs origin "$BRANCH_NAME"
+          git push origin "HEAD:$BRANCH_NAME"
