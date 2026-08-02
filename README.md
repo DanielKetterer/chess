@@ -328,3 +328,26 @@ manually from the Actions tab. To rebuild it locally, run:
 ```bash
 python scripts/build_opening_explorer.py
 ```
+
+## Puzzle Canopy (GitHub Pages)
+
+The puzzle trainer is published at
+https://danielketterer.github.io/chess/puzzles.html. It faces each board toward
+the solver, checks click-to-move choices for legality, grades immediately, and
+uses the same failed-first/due/oldest scheduling rules as the Markdown puzzle
+renderer. Category, due-state, side-to-move, and previous-failure filters are
+available above the board.
+
+After an attempt, download its JSON record or copy the displayed
+`scripts/mark_puzzle_attempt.py` command and run it from the repository root.
+The command updates `puzzles.json`; rebuild the Pages payload with:
+
+```bash
+python scripts/build_puzzle_dataset.py
+```
+
+A static GitHub Pages site cannot commit an attempt directly without an
+authenticated API/backend. The `Refresh puzzle trainer` workflow regenerates
+and commits `docs/puzzles-data.js` whenever the source puzzles or builder
+changes, while intentionally excluding bulky analysis/report fields from the
+browser payload.
