@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "game_id": "10d676e8-8cf3-11f1-93ad-9859ec01000b",
+  "game_date": "2026.07.31",
+  "game_url": "https://www.chess.com/game/daily/1007093266",
+  "white": "kjetiltellnes",
+  "black": "DanielKetterer",
+  "time_class": "daily",
+  "player_color": "black",
+  "analysis": {
+    "depth": 24,
+    "multipv": 3,
+    "findability": "honest",
+    "measurement_floor": 6,
+    "stable_run": 3,
+    "refute_threshold_rule": {
+      "floor_wp": 5.0,
+      "fraction_of_wp_loss": 0.6
+    },
+    "refute_depth_cap": 18,
+    "sacrifice_gates": {
+      "exchange_trough_pawns": 1.5,
+      "piece_trough_pawns": 3.0,
+      "recovery_tolerance_pawns": 0.5,
+      "min_pv_plies": 6,
+      "pre_eval_band_cp": [
+        -200,
+        300
+      ],
+      "min_ply": 21
+    },
+    "attention_requires": {
+      "refute_depth_max": 2,
+      "findable": "obvious"
+    },
+    "puzzle_gates": {
+      "categories": [
+        "brilliant_sacrifice",
+        "missed_tactic",
+        "allowed_tactic",
+        "endgame"
+      ],
+      "refute_min": 3,
+      "refute_max": 8,
+      "wp_gap_min": 5.0
+    },
+    "censored_low": "<=floor",
+    "censored_high": ">cap",
+    "engine": "stockfish",
+    "engine_id": "Stockfish 18",
+    "threads": 1,
+    "hash_mb": 256,
+    "deterministic": true,
+    "generated_utc": "2026-08-04T09:36:00Z"
+  },
+  "puzzle_gate_tally": {},
+  "metrics": {
+    "player_moves": 6,
+    "player_accuracy": 100.0,
+    "opponent_accuracy": 55.3,
+    "attention_errors": 0,
+    "attention_errors_per_100_moves": 0.0
+  },
+  "errors": []
+}
