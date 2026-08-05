@@ -1,6 +1,6 @@
 # Blunder Report
 
-REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  42 games  |  292 errors  |  latest run 2026-08-02T18:21:48Z
+REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  43 games  |  297 errors  |  latest run 2026-08-05T09:47:34Z
 
 Depth column: an integer is a measured depth. `<=floor` means the engine stably preferred the move at or below depth 6, which is as shallow as this measurement resolves. `>cap` means it never settled within depth 24. `unmeasured` means the measurement was invalid and the row is kept but not binned.
 
@@ -300,3 +300,8 @@ Depth column: an integer is a measured depth. `<=floor` means the engine stably 
 | 41 | 8e921396-8e8b-11f1-b0e1-57cdea01000b | 2026.08.02 | 23...Nxe5 | blunder | attention | 51.8 | <=floor | 1 | 0.0 | winning | [1008090490_20260802T171300Z_black.md](reports/2026/08/02/1008090490_20260802T171300Z_black.md) |
 | 41 | 8e921396-8e8b-11f1-b0e1-57cdea01000b | 2026.08.02 | 26...Kf6 | mistake | positional | 10.3 | <=floor | 4 | 0.0 | losing | [1008090490_20260802T171300Z_black.md](reports/2026/08/02/1008090490_20260802T171300Z_black.md) |
 | 41 | 8e921396-8e8b-11f1-b0e1-57cdea01000b | 2026.08.02 | 27...fxg2 | mistake | positional | 15.6 | 14 | 4 | 0.0 | losing | [1008090490_20260802T171300Z_black.md](reports/2026/08/02/1008090490_20260802T171300Z_black.md) |
+| 42 | dee709af-905c-11f1-9797-0b6b4d01000f | 2026.08.04 | 5.f3 | mistake | attention | 10.1 | <=floor | 1 | 25.6 | winning | [172539977052_20260804T234603Z_white.md](reports/2026/08/04/172539977052_20260804T234603Z_white.md) |
+| 42 | dee709af-905c-11f1-9797-0b6b4d01000f | 2026.08.04 | 7.e5 | blunder | attention | 30.7 | <=floor | 2 | 20.0 | balanced | [172539977052_20260804T234603Z_white.md](reports/2026/08/04/172539977052_20260804T234603Z_white.md) |
+| 42 | dee709af-905c-11f1-9797-0b6b4d01000f | 2026.08.04 | 9.Ne4 | blunder | missed_tactic | 57.6 | <=floor | 8 | 51.8 | winning | [172539977052_20260804T234603Z_white.md](reports/2026/08/04/172539977052_20260804T234603Z_white.md) |
+| 42 | dee709af-905c-11f1-9797-0b6b4d01000f | 2026.08.04 | 15.c4 | mistake | positional | 11.4 | >cap | 1 | 46.0 | losing | [172539977052_20260804T234603Z_white.md](reports/2026/08/04/172539977052_20260804T234603Z_white.md) |
+| 42 | dee709af-905c-11f1-9797-0b6b4d01000f | 2026.08.04 | 18.Ng4 | blunder | missed_tactic | 52.9 | <=floor | 14 | 47.5 | winning | [172539977052_20260804T234603Z_white.md](reports/2026/08/04/172539977052_20260804T234603Z_white.md) |

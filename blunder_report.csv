@@ -291,3 +291,8 @@ game_index,game_id,game_date,report_path,move_label,move_number,classification,e
 41,8e921396-8e8b-11f1-b0e1-57cdea01000b,2026.08.02,reports/2026/08/02/1008090490_20260802T171300Z_black.md,23...Nxe5,23,blunder,tactical,51.75,<=floor,1,0.0,winning,attention
 41,8e921396-8e8b-11f1-b0e1-57cdea01000b,2026.08.02,reports/2026/08/02/1008090490_20260802T171300Z_black.md,26...Kf6,26,mistake,positional,10.29,<=floor,4,0.0,losing,positional
 41,8e921396-8e8b-11f1-b0e1-57cdea01000b,2026.08.02,reports/2026/08/02/1008090490_20260802T171300Z_black.md,27...fxg2,27,mistake,tactical,15.55,14,4,0.0,losing,positional
+42,dee709af-905c-11f1-9797-0b6b4d01000f,2026.08.04,reports/2026/08/04/172539977052_20260804T234603Z_white.md,5.f3,5,mistake,positional,10.11,<=floor,1,25.6,winning,attention
+42,dee709af-905c-11f1-9797-0b6b4d01000f,2026.08.04,reports/2026/08/04/172539977052_20260804T234603Z_white.md,7.e5,7,blunder,tactical,30.69,<=floor,2,20.0,balanced,attention
+42,dee709af-905c-11f1-9797-0b6b4d01000f,2026.08.04,reports/2026/08/04/172539977052_20260804T234603Z_white.md,9.Ne4,9,blunder,tactical,57.57,<=floor,8,51.8,winning,missed_tactic
+42,dee709af-905c-11f1-9797-0b6b4d01000f,2026.08.04,reports/2026/08/04/172539977052_20260804T234603Z_white.md,15.c4,15,mistake,positional,11.4,>cap,1,46.0,losing,positional
+42,dee709af-905c-11f1-9797-0b6b4d01000f,2026.08.04,reports/2026/08/04/172539977052_20260804T234603Z_white.md,18.Ng4,18,blunder,deep tactic,52.89,<=floor,14,47.5,winning,missed_tactic
