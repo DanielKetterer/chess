@@ -298,3 +298,11 @@ game_index,game_id,game_date,report_path,move_label,move_number,classification,e
 43,dee709af-905c-11f1-9797-0b6b4d01000f,2026.08.04,reports/2026/08/04/172539977052_20260804T234603Z_white.md,9.Ne4,9,blunder,tactical,57.57,<=floor,8,51.8,winning,missed_tactic
 43,dee709af-905c-11f1-9797-0b6b4d01000f,2026.08.04,reports/2026/08/04/172539977052_20260804T234603Z_white.md,15.c4,15,mistake,positional,11.4,>cap,1,46.0,losing,positional
 43,dee709af-905c-11f1-9797-0b6b4d01000f,2026.08.04,reports/2026/08/04/172539977052_20260804T234603Z_white.md,18.Ng4,18,blunder,deep tactic,52.89,<=floor,14,47.5,winning,missed_tactic
+44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,6.Bg5,6,inaccuracy,positional,7.58,<=floor,9,0.0,balanced,allowed_tactic
+44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,9.b4,9,mistake,positional,11.34,14,4,0.0,balanced,allowed_tactic
+44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,13.a3,13,inaccuracy,positional,8.37,7,8,0.0,balanced,allowed_tactic
+44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,19.Ne2,19,inaccuracy,positional,5.75,>cap,1,0.0,balanced,brilliant_sacrifice
+44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,20.Nh4,20,mistake,positional,11.45,7,1,0.0,balanced,brilliant_sacrifice
+44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,31.Kg3,31,blunder,positional,34.66,<=floor,11,3.8,balanced,positional
+44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,43.Kc6,43,blunder,tactical,95.09,<=floor,7,0.0,winning,endgame
+44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,44.Kc7,44,blunder,tactical,94.38,<=floor,10,0.2,winning,endgame

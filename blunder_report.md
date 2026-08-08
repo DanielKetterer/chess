@@ -1,6 +1,6 @@
 # Blunder Report
 
-REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  44 games  |  299 errors  |  latest run 2026-08-05T09:47:34Z
+REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  45 games  |  307 errors  |  latest run 2026-08-08T08:13:18Z
 
 Depth column: an integer is a measured depth. `<=floor` means the engine stably preferred the move at or below depth 6, which is as shallow as this measurement resolves. `>cap` means it never settled within depth 24. `unmeasured` means the measurement was invalid and the row is kept but not binned.
 
@@ -307,3 +307,11 @@ Depth column: an integer is a measured depth. `<=floor` means the engine stably 
 | 43 | dee709af-905c-11f1-9797-0b6b4d01000f | 2026.08.04 | 9.Ne4 | blunder | missed_tactic | 57.6 | <=floor | 8 | 51.8 | winning | [172539977052_20260804T234603Z_white.md](reports/2026/08/04/172539977052_20260804T234603Z_white.md) |
 | 43 | dee709af-905c-11f1-9797-0b6b4d01000f | 2026.08.04 | 15.c4 | mistake | positional | 11.4 | >cap | 1 | 46.0 | losing | [172539977052_20260804T234603Z_white.md](reports/2026/08/04/172539977052_20260804T234603Z_white.md) |
 | 43 | dee709af-905c-11f1-9797-0b6b4d01000f | 2026.08.04 | 18.Ng4 | blunder | missed_tactic | 52.9 | <=floor | 14 | 47.5 | winning | [172539977052_20260804T234603Z_white.md](reports/2026/08/04/172539977052_20260804T234603Z_white.md) |
+| 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 6.Bg5 | inaccuracy | allowed_tactic | 7.6 | <=floor | 9 | 0.0 | balanced | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
+| 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 9.b4 | mistake | allowed_tactic | 11.3 | 14 | 4 | 0.0 | balanced | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
+| 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 13.a3 | inaccuracy | allowed_tactic | 8.4 | 7 | 8 | 0.0 | balanced | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
+| 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 19.Ne2 | inaccuracy | brilliant_sacrifice | 5.8 | >cap | 1 | 0.0 | balanced | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
+| 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 20.Nh4 | mistake | brilliant_sacrifice | 11.4 | 7 | 1 | 0.0 | balanced | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
+| 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 31.Kg3 | blunder | positional | 34.7 | <=floor | 11 | 3.8 | balanced | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
+| 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 43.Kc6 | blunder | endgame | 95.1 | <=floor | 7 | 0.0 | winning | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
+| 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 44.Kc7 | blunder | endgame | 94.4 | <=floor | 10 | 0.2 | winning | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
