@@ -1,6 +1,6 @@
 # Blunder Report
 
-REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  45 games  |  307 errors  |  latest run 2026-08-08T08:13:18Z
+REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  47 games  |  311 errors  |  latest run 2026-08-10T08:40:01Z
 
 Depth column: an integer is a measured depth. `<=floor` means the engine stably preferred the move at or below depth 6, which is as shallow as this measurement resolves. `>cap` means it never settled within depth 24. `unmeasured` means the measurement was invalid and the row is kept but not binned.
 
@@ -315,3 +315,7 @@ Depth column: an integer is a measured depth. `<=floor` means the engine stably 
 | 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 31.Kg3 | blunder | positional | 34.7 | <=floor | 11 | 3.8 | balanced | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
 | 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 43.Kc6 | blunder | endgame | 95.1 | <=floor | 7 | 0.0 | winning | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
 | 44 | 53b98194-9270-11f1-9c70-8b72fd01000b | 2026.08.07 | 44.Kc7 | blunder | endgame | 94.4 | <=floor | 10 | 0.2 | winning | [1010369486_20260807T164823Z_white.md](reports/2026/08/07/1010369486_20260807T164823Z_white.md) |
+| 46 | 7efd4845-940d-11f1-90cc-625e5f01000f | 2026.08.09 | 12...Bf5 | blunder | missed_tactic | 39.3 | <=floor | 5 | 51.1 | winning | [172755254030_20260809T163325Z_black.md](reports/2026/08/09/172755254030_20260809T163325Z_black.md) |
+| 46 | 7efd4845-940d-11f1-90cc-625e5f01000f | 2026.08.09 | 13...Bxc3 | mistake | missed_tactic | 13.6 | <=floor | 15 | 50.1 | losing | [172755254030_20260809T163325Z_black.md](reports/2026/08/09/172755254030_20260809T163325Z_black.md) |
+| 46 | 7efd4845-940d-11f1-90cc-625e5f01000f | 2026.08.09 | 14...Bd3 | inaccuracy | allowed_tactic | 8.9 | <=floor | 8 | 76.3 | losing | [172755254030_20260809T163325Z_black.md](reports/2026/08/09/172755254030_20260809T163325Z_black.md) |
+| 46 | 7efd4845-940d-11f1-90cc-625e5f01000f | 2026.08.09 | 18...c6 | inaccuracy | allowed_tactic | 5.1 | 22 | 14 | 27.3 | losing | [172755254030_20260809T163325Z_black.md](reports/2026/08/09/172755254030_20260809T163325Z_black.md) |

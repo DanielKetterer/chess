@@ -306,3 +306,7 @@ game_index,game_id,game_date,report_path,move_label,move_number,classification,e
 44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,31.Kg3,31,blunder,positional,34.66,<=floor,11,3.8,balanced,positional
 44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,43.Kc6,43,blunder,tactical,95.09,<=floor,7,0.0,winning,endgame
 44,53b98194-9270-11f1-9c70-8b72fd01000b,2026.08.07,reports/2026/08/07/1010369486_20260807T164823Z_white.md,44.Kc7,44,blunder,tactical,94.38,<=floor,10,0.2,winning,endgame
+46,7efd4845-940d-11f1-90cc-625e5f01000f,2026.08.09,reports/2026/08/09/172755254030_20260809T163325Z_black.md,12...Bf5,12,blunder,tactical,39.26,<=floor,5,51.1,winning,missed_tactic
+46,7efd4845-940d-11f1-90cc-625e5f01000f,2026.08.09,reports/2026/08/09/172755254030_20260809T163325Z_black.md,13...Bxc3,13,mistake,tactical,13.59,<=floor,15,50.1,losing,missed_tactic
+46,7efd4845-940d-11f1-90cc-625e5f01000f,2026.08.09,reports/2026/08/09/172755254030_20260809T163325Z_black.md,14...Bd3,14,inaccuracy,positional,8.95,<=floor,8,76.3,losing,allowed_tactic
+46,7efd4845-940d-11f1-90cc-625e5f01000f,2026.08.09,reports/2026/08/09/172755254030_20260809T163325Z_black.md,18...c6,18,inaccuracy,positional,5.07,22,14,27.3,losing,allowed_tactic
