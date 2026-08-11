@@ -310,3 +310,11 @@ game_index,game_id,game_date,report_path,move_label,move_number,classification,e
 46,7efd4845-940d-11f1-90cc-625e5f01000f,2026.08.09,reports/2026/08/09/172755254030_20260809T163325Z_black.md,13...Bxc3,13,mistake,tactical,13.59,<=floor,15,50.1,losing,missed_tactic
 46,7efd4845-940d-11f1-90cc-625e5f01000f,2026.08.09,reports/2026/08/09/172755254030_20260809T163325Z_black.md,14...Bd3,14,inaccuracy,positional,8.95,<=floor,8,76.3,losing,allowed_tactic
 46,7efd4845-940d-11f1-90cc-625e5f01000f,2026.08.09,reports/2026/08/09/172755254030_20260809T163325Z_black.md,18...c6,18,inaccuracy,positional,5.07,22,14,27.3,losing,allowed_tactic
+47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,6.d4,6,mistake,positional,14.21,7,1,9.9,winning,allowed_tactic
+47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,7.Be3,7,mistake,positional,11.49,<=floor,7,6.2,balanced,allowed_tactic
+47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,8.Nb5,8,mistake,tactical,19.06,<=floor,1,95.2,balanced,attention
+47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,10.Rd1+,10,mistake,tactical,13.9,<=floor,10,16.5,balanced,missed_tactic
+47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,11.Bxc5,11,inaccuracy,positional,6.81,9,1,57.1,losing,allowed_tactic
+47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,14.Bd3,14,inaccuracy,positional,6.02,8,3,101.9,losing,allowed_tactic
+47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,28.Ke3,28,inaccuracy,positional,5.94,10,1,17.4,losing,allowed_tactic
+47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,29.Re2,29,inaccuracy,positional,6.35,>cap,>18,14.3,losing,allowed_tactic
