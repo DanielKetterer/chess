@@ -318,3 +318,11 @@ game_index,game_id,game_date,report_path,move_label,move_number,classification,e
 47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,14.Bd3,14,inaccuracy,positional,6.02,8,3,101.9,losing,allowed_tactic
 47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,28.Ke3,28,inaccuracy,positional,5.94,10,1,17.4,losing,allowed_tactic
 47,bd044645-94f8-11f1-aab9-2f273901000f,2026.08.10,reports/2026/08/10/172811072626_20260810T203528Z_white.md,29.Re2,29,inaccuracy,positional,6.35,>cap,>18,14.3,losing,allowed_tactic
+48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,3...c5,3,inaccuracy,positional,5.06,9,>18,36.1,balanced,opening
+48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,4...g6,4,inaccuracy,positional,9.61,10,4,33.8,balanced,opening
+48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,7...b6,7,inaccuracy,positional,6.74,<=floor,9,28.1,winning,opening
+48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,9...cxd4,9,blunder,positional,31.16,<=floor,1,19.0,winning,attention
+48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,10...dxe4,10,blunder,tactical,21.94,<=floor,5,32.4,balanced,allowed_tactic
+48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,21...Rd8,21,mistake,tactical,11.35,<=floor,1,95.2,winning,attention
+48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,23...Rd7,23,blunder,positional,38.94,10,2,21.0,balanced,allowed_tactic
+48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,24...Rd8,24,mistake,tactical,14.96,<=floor,1,18.4,losing,attention
