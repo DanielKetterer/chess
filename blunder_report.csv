@@ -326,3 +326,7 @@ game_index,game_id,game_date,report_path,move_label,move_number,classification,e
 48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,21...Rd8,21,mistake,tactical,11.35,<=floor,1,95.2,winning,attention
 48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,23...Rd7,23,blunder,positional,38.94,10,2,21.0,balanced,allowed_tactic
 48,cd4dd80e-95c6-11f1-b5d5-5f0b4701000f,2026.08.11,reports/2026/08/11/172859523738_20260811T211424Z_black.md,24...Rd8,24,mistake,tactical,14.96,<=floor,1,18.4,losing,attention
+49,ef76cbfc-95b1-11f1-a0ca-9ec2cd01000b,2026.08.11,reports/2026/08/19/1012413288_20260819T122715Z_white.md,4.c3,4,mistake,positional,10.16,>cap,3,0.0,balanced,opening
+49,ef76cbfc-95b1-11f1-a0ca-9ec2cd01000b,2026.08.11,reports/2026/08/19/1012413288_20260819T122715Z_white.md,8.Nxg6,8,mistake,positional,2.73,<=floor,10,0.0,winning,allowed_tactic
+49,ef76cbfc-95b1-11f1-a0ca-9ec2cd01000b,2026.08.11,reports/2026/08/19/1012413288_20260819T122715Z_white.md,10.Qf3,10,mistake,positional,1.98,17,>18,22758.6,winning,opening
+49,ef76cbfc-95b1-11f1-a0ca-9ec2cd01000b,2026.08.11,reports/2026/08/19/1012413288_20260819T122715Z_white.md,25.b4,25,mistake,positional,0.0,>cap,>18,1078.4,winning,positional

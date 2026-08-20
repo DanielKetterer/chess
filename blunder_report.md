@@ -1,6 +1,6 @@
 # Blunder Report
 
-REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  49 games  |  327 errors  |  latest run 2026-08-12T08:39:07Z
+REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  50 games  |  331 errors  |  latest run 2026-08-20T07:48:04Z
 
 Depth column: an integer is a measured depth. `<=floor` means the engine stably preferred the move at or below depth 6, which is as shallow as this measurement resolves. `>cap` means it never settled within depth 24. `unmeasured` means the measurement was invalid and the row is kept but not binned.
 
@@ -335,3 +335,7 @@ Depth column: an integer is a measured depth. `<=floor` means the engine stably 
 | 48 | cd4dd80e-95c6-11f1-b5d5-5f0b4701000f | 2026.08.11 | 21...Rd8 | mistake | attention | 11.3 | <=floor | 1 | 95.2 | winning | [172859523738_20260811T211424Z_black.md](reports/2026/08/11/172859523738_20260811T211424Z_black.md) |
 | 48 | cd4dd80e-95c6-11f1-b5d5-5f0b4701000f | 2026.08.11 | 23...Rd7 | blunder | allowed_tactic | 38.9 | 10 | 2 | 21.0 | balanced | [172859523738_20260811T211424Z_black.md](reports/2026/08/11/172859523738_20260811T211424Z_black.md) |
 | 48 | cd4dd80e-95c6-11f1-b5d5-5f0b4701000f | 2026.08.11 | 24...Rd8 | mistake | attention | 15.0 | <=floor | 1 | 18.4 | losing | [172859523738_20260811T211424Z_black.md](reports/2026/08/11/172859523738_20260811T211424Z_black.md) |
+| 49 | ef76cbfc-95b1-11f1-a0ca-9ec2cd01000b | 2026.08.11 | 4.c3 | mistake | opening | 10.2 | >cap | 3 | 0.0 | balanced | [1012413288_20260819T122715Z_white.md](reports/2026/08/19/1012413288_20260819T122715Z_white.md) |
+| 49 | ef76cbfc-95b1-11f1-a0ca-9ec2cd01000b | 2026.08.11 | 8.Nxg6 | mistake | allowed_tactic | 2.7 | <=floor | 10 | 0.0 | winning | [1012413288_20260819T122715Z_white.md](reports/2026/08/19/1012413288_20260819T122715Z_white.md) |
+| 49 | ef76cbfc-95b1-11f1-a0ca-9ec2cd01000b | 2026.08.11 | 10.Qf3 | mistake | opening | 2.0 | 17 | >18 | 22758.6 | winning | [1012413288_20260819T122715Z_white.md](reports/2026/08/19/1012413288_20260819T122715Z_white.md) |
+| 49 | ef76cbfc-95b1-11f1-a0ca-9ec2cd01000b | 2026.08.11 | 25.b4 | mistake | positional | 0.0 | >cap | >18 | 1078.4 | winning | [1012413288_20260819T122715Z_white.md](reports/2026/08/19/1012413288_20260819T122715Z_white.md) |
