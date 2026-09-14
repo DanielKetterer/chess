@@ -1699,5 +1699,29 @@
     "source_game": "https://www.chess.com/game/daily/1012413288",
     "move_number": 7,
     "date_generated": "2026-08-20T07:48:04Z"
+  },
+  {
+    "id": "p351ecaf3cc",
+    "fen_before": "1r3rk1/p5pp/1b2pn2/5pN1/1P2p3/P1N5/2P2PPP/3R1RK1 b - - 2 16",
+    "move_played": "b8c8",
+    "move_played_san": "Rbc8",
+    "best_move": "e4e3",
+    "best_move_san": "e3",
+    "refutation": null,
+    "refutation_san": null,
+    "puzzle_type": "missed_tactic",
+    "category": "missed_tactic",
+    "prompt_type": "best_move",
+    "prompt": "Find the best move in this position.",
+    "best_second_wp_gap": 5.88,
+    "refute_depth": 6,
+    "wp_loss": 21.1,
+    "eval_before": "-3.02",
+    "pre_error_bucket": "winning",
+    "sacrifice": null,
+    "attempts": [],
+    "source_game": "https://www.chess.com/game/daily/1017020672",
+    "move_number": 16,
+    "date_generated": "2026-09-14T13:38:11Z"
   }
 ]
