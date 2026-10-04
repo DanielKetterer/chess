@@ -1,0 +1,151 @@
+{
+  "schema_version": 2,
+  "game_id": "478432bc-8f5e-11f1-8ccf-e7e3aa01000b",
+  "game_date": "2026.08.03",
+  "game_url": "https://www.chess.com/game/daily/1008631838",
+  "white": "LoedJuhu",
+  "black": "DanielKetterer",
+  "time_class": "daily",
+  "player_color": "white",
+  "analysis": {
+    "depth": 24,
+    "multipv": 3,
+    "findability": "honest",
+    "measurement_floor": 6,
+    "stable_run": 3,
+    "refute_threshold_rule": {
+      "floor_wp": 5.0,
+      "fraction_of_wp_loss": 0.6
+    },
+    "refute_depth_cap": 18,
+    "sacrifice_gates": {
+      "exchange_trough_pawns": 1.5,
+      "piece_trough_pawns": 3.0,
+      "recovery_tolerance_pawns": 0.5,
+      "min_pv_plies": 6,
+      "pre_eval_band_cp": [
+        -200,
+        300
+      ],
+      "min_ply": 21
+    },
+    "attention_requires": {
+      "refute_depth_max": 2,
+      "findable": "obvious"
+    },
+    "puzzle_gates": {
+      "categories": [
+        "brilliant_sacrifice",
+        "missed_tactic",
+        "allowed_tactic",
+        "endgame"
+      ],
+      "refute_min": 3,
+      "refute_max": 8,
+      "wp_gap_min": 5.0
+    },
+    "censored_low": "<=floor",
+    "censored_high": ">cap",
+    "engine": "stockfish",
+    "engine_id": "Stockfish 18",
+    "threads": 1,
+    "hash_mb": 256,
+    "deterministic": true,
+    "generated_utc": "2026-10-04T13:04:34Z"
+  },
+  "puzzle_gate_tally": {
+    "accepted": 1,
+    "category:attention": 1,
+    "wp_gap_too_small": 1
+  },
+  "metrics": {
+    "player_moves": 24,
+    "player_accuracy": 84.0,
+    "opponent_accuracy": 90.1,
+    "attention_errors": 1,
+    "attention_errors_per_100_moves": 4.17
+  },
+  "errors": [
+    {
+      "ply": 17,
+      "move_number": 9,
+      "color": "white",
+      "san": "Qe2",
+      "move_label": "9.Qe2",
+      "classification": "mistake",
+      "error_type": "tactical",
+      "error_category": "missed_tactic",
+      "wp_loss": 13.26,
+      "cp_loss": 145,
+      "depth_to_find": "<=floor",
+      "refute_depth": 5,
+      "refute_threshold_wp": 7.96,
+      "refutation": null,
+      "sacrifice": null,
+      "puzzle_reject": null,
+      "findable": "obvious",
+      "seconds_spent": 0.0,
+      "pre_error_eval": "+0.63",
+      "pre_error_bucket": "balanced",
+      "fen_before": "r1bqk2r/pppp1ppp/2n5/8/2BPn3/2P2N2/P4PPP/R1BQK2R w KQkq - 0 9",
+      "uci": "d1e2",
+      "best_move_san": "d5",
+      "best_move_uci": "d4d5",
+      "best_second_wp_gap": 5.77
+    },
+    {
+      "ply": 19,
+      "move_number": 10,
+      "color": "white",
+      "san": "Ng5",
+      "move_label": "10.Ng5",
+      "classification": "mistake",
+      "error_type": "tactical",
+      "error_category": "attention",
+      "wp_loss": 14.71,
+      "cp_loss": 161,
+      "depth_to_find": "<=floor",
+      "refute_depth": 1,
+      "refute_threshold_wp": 8.83,
+      "refutation": null,
+      "sacrifice": null,
+      "puzzle_reject": "category:attention",
+      "findable": "obvious",
+      "seconds_spent": 0.0,
+      "pre_error_eval": "+0.78",
+      "pre_error_bucket": "balanced",
+      "fen_before": "r1b1k2r/ppppqppp/2n5/8/2BPn3/2P2N2/P3QPPP/R1B1K2R w KQkq - 2 10",
+      "uci": "f3g5",
+      "best_move_san": "O-O",
+      "best_move_uci": "e1g1",
+      "best_second_wp_gap": 9.71
+    },
+    {
+      "ply": 47,
+      "move_number": 24,
+      "color": "white",
+      "san": "Kg2",
+      "move_label": "24.Kg2",
+      "classification": "mistake",
+      "error_type": "tactical",
+      "error_category": "missed_tactic",
+      "wp_loss": 12.57,
+      "cp_loss": 142,
+      "depth_to_find": "<=floor",
+      "refute_depth": 8,
+      "refute_threshold_wp": 7.54,
+      "refutation": null,
+      "sacrifice": null,
+      "puzzle_reject": "wp_gap_too_small",
+      "findable": "obvious",
+      "seconds_spent": 3034.5,
+      "pre_error_eval": "-0.30",
+      "pre_error_bucket": "balanced",
+      "fen_before": "2r3k1/p4pp1/1pnp3p/1Bp2b2/3P3P/2P3P1/P2B1P2/4R1K1 w - - 1 24",
+      "uci": "g1g2",
+      "best_move_san": "Bxc6",
+      "best_move_uci": "b5c6",
+      "best_second_wp_gap": 1.92
+    }
+  ]
+}
