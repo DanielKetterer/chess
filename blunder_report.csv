@@ -347,3 +347,10 @@ game_index,game_id,game_date,report_path,move_label,move_number,classification,e
 52,6eb6e132-9e35-11f1-907f-55d84c01000b,2026.08.22,reports/2026/10/03/1017562048_20261003T133814Z_black.md,23...h5,23,inaccuracy,positional,8.68,<=floor,9,0.0,balanced,positional
 52,6eb6e132-9e35-11f1-907f-55d84c01000b,2026.08.22,reports/2026/10/03/1017562048_20261003T133814Z_black.md,29...dxe4,29,inaccuracy,positional,8.15,<=floor,1,3871.5,winning,attention
 52,6eb6e132-9e35-11f1-907f-55d84c01000b,2026.08.22,reports/2026/10/03/1017562048_20261003T133814Z_black.md,31...Nd5,31,blunder,positional,55.26,11,2,0.0,winning,allowed_tactic
+53,2a31d647-c692-11f1-b809-a9c32901000f,2026.10.12,reports/2026/10/12/185236373120_20261012T233251Z_white.md,2.Bc4,2,inaccuracy,positional,5.98,>cap,4,25.6,balanced,opening
+53,2a31d647-c692-11f1-b809-a9c32901000f,2026.10.12,reports/2026/10/12/185236373120_20261012T233251Z_white.md,9.g3,9,mistake,positional,11.86,<=floor,1,9.5,balanced,attention
+53,2a31d647-c692-11f1-b809-a9c32901000f,2026.10.12,reports/2026/10/12/185236373120_20261012T233251Z_white.md,10.Nc3,10,inaccuracy,positional,5.16,<=floor,8,17.5,balanced,opening
+53,2a31d647-c692-11f1-b809-a9c32901000f,2026.10.12,reports/2026/10/12/185236373120_20261012T233251Z_white.md,12.Bxc6,12,inaccuracy,positional,5.04,<=floor,3,53.9,balanced,allowed_tactic
+53,2a31d647-c692-11f1-b809-a9c32901000f,2026.10.12,reports/2026/10/12/185236373120_20261012T233251Z_white.md,13.Nd4,13,inaccuracy,positional,5.4,8,12,98.6,balanced,positional
+53,2a31d647-c692-11f1-b809-a9c32901000f,2026.10.12,reports/2026/10/12/185236373120_20261012T233251Z_white.md,15.Nxe6,15,blunder,tactical,20.83,<=floor,3,30.8,balanced,missed_tactic
+53,2a31d647-c692-11f1-b809-a9c32901000f,2026.10.12,reports/2026/10/12/185236373120_20261012T233251Z_white.md,17.Nd7,17,mistake,tactical,11.9,<=floor,1,5.0,losing,attention
