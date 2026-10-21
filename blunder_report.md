@@ -1,6 +1,6 @@
 # Blunder Report
 
-REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  54 games  |  355 errors  |  latest run 2026-10-13T15:01:17Z
+REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  55 games  |  366 errors  |  latest run 2026-10-13T15:01:17Z
 
 Depth column: an integer is a measured depth. `<=floor` means the engine stably preferred the move at or below depth 6, which is as shallow as this measurement resolves. `>cap` means it never settled within depth 24. `unmeasured` means the measurement was invalid and the row is kept but not binned.
 
@@ -356,10 +356,21 @@ Depth column: an integer is a measured depth. `<=floor` means the engine stably 
 | 52 | 6eb6e132-9e35-11f1-907f-55d84c01000b | 2026.08.22 | 23...h5 | inaccuracy | positional | 8.7 | <=floor | 9 | 0.0 | balanced | [1017562048_20261003T133814Z_black.md](reports/2026/10/03/1017562048_20261003T133814Z_black.md) |
 | 52 | 6eb6e132-9e35-11f1-907f-55d84c01000b | 2026.08.22 | 29...dxe4 | inaccuracy | attention | 8.2 | <=floor | 1 | 3871.5 | winning | [1017562048_20261003T133814Z_black.md](reports/2026/10/03/1017562048_20261003T133814Z_black.md) |
 | 52 | 6eb6e132-9e35-11f1-907f-55d84c01000b | 2026.08.22 | 31...Nd5 | blunder | allowed_tactic | 55.3 | 11 | 2 | 0.0 | winning | [1017562048_20261003T133814Z_black.md](reports/2026/10/03/1017562048_20261003T133814Z_black.md) |
-| 53 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 2.Bc4 | inaccuracy | opening | 6.0 | >cap | 4 | 25.6 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
-| 53 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 9.g3 | mistake | attention | 11.9 | <=floor | 1 | 9.5 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
-| 53 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 10.Nc3 | inaccuracy | opening | 5.2 | <=floor | 8 | 17.5 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
-| 53 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 12.Bxc6 | inaccuracy | allowed_tactic | 5.0 | <=floor | 3 | 53.9 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
-| 53 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 13.Nd4 | inaccuracy | positional | 5.4 | 8 | 12 | 98.6 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
-| 53 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 15.Nxe6 | blunder | missed_tactic | 20.8 | <=floor | 3 | 30.8 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
-| 53 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 17.Nd7 | mistake | attention | 11.9 | <=floor | 1 | 5.0 | losing | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 5...Bd7 | inaccuracy | allowed_tactic | 6.9 | 8 | 11 | 0.0 | balanced | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 7...Bxb5 | inaccuracy | attention | 6.1 | <=floor | 1 | 19145.4 | balanced | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 8...c6 | mistake | missed_tactic | 16.7 | <=floor | 6 | 0.0 | balanced | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 9...a6 | inaccuracy | allowed_tactic | 9.1 | 17 | 1 | 0.0 | losing | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 10...Be7 | inaccuracy | allowed_tactic | 6.0 | 11 | 2 | 4058.4 | losing | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 11...axb5 | mistake | attention | 15.4 | <=floor | 1 | 19148.3 | losing | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 13...Qc7 | mistake | allowed_tactic | 19.0 | 11 | 6 | 88.2 | balanced | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 14...Nf6 | inaccuracy | positional | 6.3 | 9 | 12 | 0.0 | losing | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 16...dxe4 | mistake | missed_tactic | 12.1 | <=floor | 5 | 15940.3 | winning | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 18...Re8 | blunder | missed_tactic | 36.2 | <=floor | 3 | 0.0 | balanced | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 53 | 320849aa-b240-11f1-9078-519bb301000b | 2026.09.17 | 19...Rxe7 | mistake | allowed_tactic | 15.0 | >cap | 2 | 0.0 | losing | [1030376018_20261020T120448Z_black.md](reports/2026/10/20/1030376018_20261020T120448Z_black.md) |
+| 54 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 2.Bc4 | inaccuracy | opening | 6.0 | >cap | 4 | 25.6 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
+| 54 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 9.g3 | mistake | attention | 11.9 | <=floor | 1 | 9.5 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
+| 54 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 10.Nc3 | inaccuracy | opening | 5.2 | <=floor | 8 | 17.5 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
+| 54 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 12.Bxc6 | inaccuracy | allowed_tactic | 5.0 | <=floor | 3 | 53.9 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
+| 54 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 13.Nd4 | inaccuracy | positional | 5.4 | 8 | 12 | 98.6 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
+| 54 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 15.Nxe6 | blunder | missed_tactic | 20.8 | <=floor | 3 | 30.8 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
+| 54 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 17.Nd7 | mistake | attention | 11.9 | <=floor | 1 | 5.0 | losing | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
