@@ -1,6 +1,6 @@
 # Blunder Report
 
-REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  55 games  |  366 errors  |  latest run 2026-10-13T15:01:17Z
+REAL DATA  |  analysis depth 24  |  ladder floor 6  |  cap 24  |  stable run 3  |  56 games  |  368 errors  |  latest run 2026-11-04T15:01:59Z
 
 Depth column: an integer is a measured depth. `<=floor` means the engine stably preferred the move at or below depth 6, which is as shallow as this measurement resolves. `>cap` means it never settled within depth 24. `unmeasured` means the measurement was invalid and the row is kept but not binned.
 
@@ -374,3 +374,5 @@ Depth column: an integer is a measured depth. `<=floor` means the engine stably 
 | 54 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 13.Nd4 | inaccuracy | positional | 5.4 | 8 | 12 | 98.6 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
 | 54 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 15.Nxe6 | blunder | missed_tactic | 20.8 | <=floor | 3 | 30.8 | balanced | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
 | 54 | 2a31d647-c692-11f1-b809-a9c32901000f | 2026.10.12 | 17.Nd7 | mistake | attention | 11.9 | <=floor | 1 | 5.0 | losing | [185236373120_20261012T233251Z_white.md](reports/2026/10/12/185236373120_20261012T233251Z_white.md) |
+| 55 | 7175d41a-ccdd-11f1-b221-e4059401000b | 2026.10.20 | 6.Bxh6 | inaccuracy | allowed_tactic | 6.7 | <=floor | 14 | 810.7 | balanced | [1047646506_20261103T152643Z_white.md](reports/2026/11/03/1047646506_20261103T152643Z_white.md) |
+| 55 | 7175d41a-ccdd-11f1-b221-e4059401000b | 2026.10.20 | 8.bxc3 | mistake | missed_tactic | 18.9 | <=floor | 5 | 2576.6 | balanced | [1047646506_20261103T152643Z_white.md](reports/2026/11/03/1047646506_20261103T152643Z_white.md) |

@@ -365,3 +365,5 @@ game_index,game_id,game_date,report_path,move_label,move_number,classification,e
 54,2a31d647-c692-11f1-b809-a9c32901000f,2026.10.12,reports/2026/10/12/185236373120_20261012T233251Z_white.md,13.Nd4,13,inaccuracy,positional,5.4,8,12,98.6,balanced,positional
 54,2a31d647-c692-11f1-b809-a9c32901000f,2026.10.12,reports/2026/10/12/185236373120_20261012T233251Z_white.md,15.Nxe6,15,blunder,tactical,20.83,<=floor,3,30.8,balanced,missed_tactic
 54,2a31d647-c692-11f1-b809-a9c32901000f,2026.10.12,reports/2026/10/12/185236373120_20261012T233251Z_white.md,17.Nd7,17,mistake,tactical,11.9,<=floor,1,5.0,losing,attention
+55,7175d41a-ccdd-11f1-b221-e4059401000b,2026.10.20,reports/2026/11/03/1047646506_20261103T152643Z_white.md,6.Bxh6,6,inaccuracy,positional,6.7,<=floor,14,810.7,balanced,allowed_tactic
+55,7175d41a-ccdd-11f1-b221-e4059401000b,2026.10.20,reports/2026/11/03/1047646506_20261103T152643Z_white.md,8.bxc3,8,mistake,tactical,18.95,<=floor,5,2576.6,balanced,missed_tactic
